@@ -1,0 +1,51 @@
+{
+  "id": "shopify-marketing-tools",
+  "title": "Shopify Marketing Essentials",
+  "description": "Explore Shopify's built-in marketing tools to grow your online store.",
+  "priority": 11,
+  "category": "shopify",
+  "tags": ["shopify", "marketing", "sales", "promotion"],
+  "image": "https://images.unsplash.com/photo-1533750516457-a7f992034fec?auto=format&fit=crop&q=80&w=800&h=400",
+  "blocks": [
+    {
+      "id": "intro",
+      "type": "heading",
+      "content": "<h2>Marketing Your Shopify Store</h2>",
+      "order": 0
+    },
+    {
+      "id": "overview",
+      "type": "text",
+      "content": "<p>Discover how to use Shopify's marketing tools to attract customers and boost sales.</p>",
+      "order": 1
+    },
+    {
+      "id": "email-marketing",
+      "type": "heading",
+      "content": "<h3>Email Marketing</h3>",
+      "order": 2
+    },
+    {
+      "id": "email-content",
+      "type": "text",
+      "content": "<p>Effective email marketing strategies:</p><ul><li>Newsletter setup</li><li>Abandoned cart recovery</li><li>Customer segmentation</li><li>Automated campaigns</li><li>Performance tracking</li></ul>",
+      "order": 3
+    },
+    {
+      "id": "discounts",
+      "type": "heading",
+      "content": "<h3>Discount Strategies</h3>",
+      "order": 4
+    },
+    {
+      "id": "discounts-content",
+      "type": "text",
+      "content": "<p>Create effective promotions:</p><ul><li>Discount code creation</li><li>Automatic discounts</li><li>Buy X get Y deals</li><li>Volume discounts</li><li>Limited-time offers</li></ul>",
+      "order": 5
+    }
+  ],
+  "createdAt": "2024-03-15T00:00:00.000Z",
+  "updatedAt": "2024-03-15T00:00:00.000Z",
+  "author": "admin",
+  "status": "published"
+}

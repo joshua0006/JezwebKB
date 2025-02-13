@@ -1,0 +1,50 @@
+{
+  "id": "elementor-section-widget",
+  "title": "Mastering Sections and Columns",
+  "description": "Learn how to create professional layouts using Elementor's Section and Column structure.",
+  "category": "elementor",
+  "tags": ["elementor", "widgets", "layout", "sections"],
+  "image": "https://images.unsplash.com/photo-1507842217343-583bb7270b66?auto=format&fit=crop&q=80&w=800&h=400",
+  "blocks": [
+    {
+      "id": "intro",
+      "type": "heading",
+      "content": "<h2>Understanding Sections and Columns</h2>",
+      "order": 0
+    },
+    {
+      "id": "overview",
+      "type": "text",
+      "content": "<p>Sections and columns are the foundation of your Elementor layouts. Master these to create professional page structures.</p>",
+      "order": 1
+    },
+    {
+      "id": "structure",
+      "type": "heading",
+      "content": "<h3>Layout Structure</h3>",
+      "order": 2
+    },
+    {
+      "id": "structure-content",
+      "type": "text",
+      "content": "<p>Key layout concepts:</p><ul><li>Section types and purposes</li><li>Column arrangements</li><li>Responsive layouts</li><li>Nested sections</li><li>Content width control</li></ul>",
+      "order": 3
+    },
+    {
+      "id": "styling",
+      "type": "heading",
+      "content": "<h3>Section Styling</h3>",
+      "order": 4
+    },
+    {
+      "id": "styling-content",
+      "type": "text",
+      "content": "<p>Available styling options:</p><ul><li>Background types (color, image, video)</li><li>Shape dividers</li><li>Overlay effects</li><li>Padding and margin</li><li>Custom CSS</li></ul>",
+      "order": 5
+    }
+  ],
+  "createdAt": "2024-03-15T00:00:00.000Z",
+  "updatedAt": "2024-03-15T00:00:00.000Z",
+  "author": "admin",
+  "status": "published"
+}

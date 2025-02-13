@@ -1,0 +1,63 @@
+{
+  "id": "elementor-advanced-techniques",
+  "title": "Advanced Elementor Techniques",
+  "description": "Take your Elementor skills to the next level with advanced features and professional techniques.",
+  "priority": 13,
+  "category": "elementor",
+  "tags": ["elementor", "advanced", "professional", "optimization"],
+  "image": "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&q=80&w=800&h=400",
+  "blocks": [
+    {
+      "id": "intro",
+      "type": "heading",
+      "content": "<h2>Advanced Elementor Techniques</h2>",
+      "order": 0
+    },
+    {
+      "id": "overview",
+      "type": "text",
+      "content": "<p>Once you've mastered the basics, these advanced techniques will help you create more sophisticated and efficient websites with Elementor.</p>",
+      "order": 1
+    },
+    {
+      "id": "global-widgets",
+      "type": "heading",
+      "content": "<h3>Global Widgets and Templates</h3>",
+      "order": 2
+    },
+    {
+      "id": "global-content",
+      "type": "text",
+      "content": "<p>Learn to use global features for efficient site management:</p><ul><li>Creating and managing global widgets</li><li>Building reusable templates</li><li>Setting up global colors and typography</li><li>Using dynamic content</li></ul>",
+      "order": 3
+    },
+    {
+      "id": "custom-css",
+      "type": "heading",
+      "content": "<h3>Custom CSS and JavaScript</h3>",
+      "order": 4
+    },
+    {
+      "id": "code-content",
+      "type": "text",
+      "content": "<p>Enhance your designs with custom code:</p><ul><li>Adding custom CSS to widgets</li><li>Using custom selectors</li><li>Implementing custom animations</li><li>Integrating third-party scripts</li></ul>",
+      "order": 5
+    },
+    {
+      "id": "optimization",
+      "type": "heading",
+      "content": "<h3>Performance Optimization</h3>",
+      "order": 6
+    },
+    {
+      "id": "optimization-content",
+      "type": "text",
+      "content": "<p>Keep your Elementor site fast and efficient:</p><ul><li>Optimizing images and media</li><li>Reducing widget load</li><li>Using proper heading hierarchy</li><li>Implementing lazy loading</li><li>Managing resource loading</li></ul>",
+      "order": 7
+    }
+  ],
+  "createdAt": "2024-03-15T00:00:00.000Z",
+  "updatedAt": "2024-03-15T00:00:00.000Z",
+  "author": "admin",
+  "status": "published"
+}

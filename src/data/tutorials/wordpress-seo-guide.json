@@ -1,0 +1,51 @@
+{
+  "id": "wordpress-seo-guide",
+  "title": "WordPress SEO Fundamentals",
+  "description": "Master the basics of Search Engine Optimization for your WordPress website.",
+  "priority": 4,
+  "category": "wordpress",
+  "tags": ["wordpress", "seo", "optimization", "marketing"],
+  "image": "https://images.unsplash.com/photo-1571721795195-a2ca2d3370a9?auto=format&fit=crop&q=80&w=800&h=400",
+  "blocks": [
+    {
+      "id": "intro",
+      "type": "heading",
+      "content": "<h2>SEO for WordPress</h2>",
+      "order": 0
+    },
+    {
+      "id": "overview",
+      "type": "text",
+      "content": "<p>Learn how to optimize your WordPress website for search engines and improve your rankings with these essential SEO techniques.</p>",
+      "order": 1
+    },
+    {
+      "id": "on-page",
+      "type": "heading",
+      "content": "<h3>On-Page SEO</h3>",
+      "order": 2
+    },
+    {
+      "id": "on-page-content",
+      "type": "text",
+      "content": "<p>Essential on-page optimization:</p><ul><li>Title tag optimization</li><li>Meta description best practices</li><li>Header tag hierarchy</li><li>Internal linking strategy</li><li>Image alt text optimization</li></ul>",
+      "order": 3
+    },
+    {
+      "id": "technical",
+      "type": "heading",
+      "content": "<h3>Technical SEO</h3>",
+      "order": 4
+    },
+    {
+      "id": "technical-content",
+      "type": "text",
+      "content": "<p>Technical optimization tips:</p><ul><li>XML sitemap configuration</li><li>Robots.txt setup</li><li>Mobile optimization</li><li>Schema markup implementation</li><li>Site structure planning</li></ul>",
+      "order": 5
+    }
+  ],
+  "createdAt": "2024-03-15T00:00:00.000Z",
+  "updatedAt": "2024-03-15T00:00:00.000Z",
+  "author": "admin",
+  "status": "published"
+}

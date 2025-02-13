@@ -1,0 +1,51 @@
+{
+  "id": "elementor-interface-basics",
+  "title": "Understanding the Elementor Interface",
+  "description": "Get familiar with Elementor's interface and basic controls to start building beautiful pages.",
+  "priority": 10,
+  "category": "elementor",
+  "tags": ["elementor", "basics", "interface", "getting-started"],
+  "image": "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=800&h=400",
+  "blocks": [
+    {
+      "id": "intro",
+      "type": "heading",
+      "content": "<h2>Getting Started with the Elementor Interface</h2>",
+      "order": 0
+    },
+    {
+      "id": "overview",
+      "type": "text",
+      "content": "<p>Before diving into creating stunning pages with Elementor, it's essential to understand its interface and basic controls. This guide will walk you through everything you need to know to get started.</p>",
+      "order": 1
+    },
+    {
+      "id": "main-areas",
+      "type": "heading",
+      "content": "<h3>Main Areas of the Interface</h3>",
+      "order": 2
+    },
+    {
+      "id": "areas-content",
+      "type": "text",
+      "content": "<p>The Elementor interface consists of three main areas:</p><ul><li><strong>Preview Area:</strong> The main canvas where you see your page design in real-time</li><li><strong>Panel:</strong> The left sidebar containing widgets and settings</li><li><strong>Menu:</strong> The hamburger menu at the top-left for global actions</li></ul>",
+      "order": 3
+    },
+    {
+      "id": "navigation",
+      "type": "heading",
+      "content": "<h3>Navigating the Panel</h3>",
+      "order": 4
+    },
+    {
+      "id": "panel-explanation",
+      "type": "text",
+      "content": "<p>The panel is your primary toolbox in Elementor. It contains:</p><ul><li>Elements/Widgets tab for adding content</li><li>Global settings for colors and typography</li><li>Page settings for layout and background</li><li>Responsive mode controls</li><li>History and revisions</li></ul>",
+      "order": 5
+    }
+  ],
+  "createdAt": "2024-03-15T00:00:00.000Z",
+  "updatedAt": "2024-03-15T00:00:00.000Z",
+  "author": "admin",
+  "status": "published"
+}

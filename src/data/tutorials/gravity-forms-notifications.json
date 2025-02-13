@@ -1,0 +1,50 @@
+{
+  "id": "gravity-forms-notifications",
+  "title": "Setting Up Form Notifications",
+  "description": "Configure email notifications, confirmations, and automated responses in Gravity Forms.",
+  "category": "gravity-forms",
+  "tags": ["gravity-forms", "notifications", "email", "automation"],
+  "image": "https://images.unsplash.com/photo-1596526131083-e8c633c948d2?auto=format&fit=crop&q=80&w=800&h=400",
+  "blocks": [
+    {
+      "id": "intro",
+      "type": "heading",
+      "content": "<h2>Form Notifications and Responses</h2>",
+      "order": 0
+    },
+    {
+      "id": "overview",
+      "type": "text",
+      "content": "<p>Learn how to set up automated responses and notifications to keep both administrators and users informed about form submissions.</p>",
+      "order": 1
+    },
+    {
+      "id": "admin-notifications",
+      "type": "heading",
+      "content": "<h3>Admin Notifications</h3>",
+      "order": 2
+    },
+    {
+      "id": "admin-content",
+      "type": "text",
+      "content": "<p>Configure administrator notifications:</p><ul><li>Setting up email recipients</li><li>Customizing notification content</li><li>Using conditional notifications</li><li>HTML email templates</li></ul>",
+      "order": 3
+    },
+    {
+      "id": "user-confirmations",
+      "type": "heading",
+      "content": "<h3>User Confirmations</h3>",
+      "order": 4
+    },
+    {
+      "id": "confirmation-content",
+      "type": "text",
+      "content": "<p>Create user-friendly confirmations:</p><ul><li>Text confirmations</li><li>Page redirects</li><li>Custom confirmation messages</li><li>Dynamic content in confirmations</li></ul>",
+      "order": 5
+    }
+  ],
+  "createdAt": "2024-03-15T00:00:00.000Z",
+  "updatedAt": "2024-03-15T00:00:00.000Z",
+  "author": "admin",
+  "status": "published"
+}

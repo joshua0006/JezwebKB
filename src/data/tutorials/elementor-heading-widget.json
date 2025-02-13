@@ -1,0 +1,50 @@
+{
+  "id": "elementor-heading-widget",
+  "title": "Mastering the Heading Widget",
+  "description": "Learn how to create beautiful headings and titles using Elementor's Heading widget.",
+  "category": "elementor",
+  "tags": ["elementor", "widgets", "typography", "headings"],
+  "image": "https://images.unsplash.com/photo-1555421689-d68471e189f2?auto=format&fit=crop&q=80&w=800&h=400",
+  "blocks": [
+    {
+      "id": "intro",
+      "type": "heading",
+      "content": "<h2>Using the Heading Widget</h2>",
+      "order": 0
+    },
+    {
+      "id": "overview",
+      "type": "text",
+      "content": "<p>The Heading widget is one of the most fundamental elements in Elementor, perfect for creating titles, subtitles, and section headers with professional typography.</p>",
+      "order": 1
+    },
+    {
+      "id": "features",
+      "type": "heading",
+      "content": "<h3>Key Features</h3>",
+      "order": 2
+    },
+    {
+      "id": "features-content",
+      "type": "text",
+      "content": "<p>Essential features of the Heading widget:</p><ul><li>HTML tag selection (H1-H6)</li><li>Advanced typography controls</li><li>Text alignment options</li><li>Blend modes and text shadows</li><li>Responsive text sizing</li></ul>",
+      "order": 3
+    },
+    {
+      "id": "styling",
+      "type": "heading",
+      "content": "<h3>Styling Options</h3>",
+      "order": 4
+    },
+    {
+      "id": "styling-content",
+      "type": "text",
+      "content": "<p>Customize your headings with these styling options:</p><ul><li>Font family and weight</li><li>Text color and background</li><li>Letter spacing and line height</li><li>Text decoration</li><li>Text stroke effects</li></ul>",
+      "order": 5
+    }
+  ],
+  "createdAt": "2024-03-15T00:00:00.000Z",
+  "updatedAt": "2024-03-15T00:00:00.000Z",
+  "author": "admin",
+  "status": "published"
+}

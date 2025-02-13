@@ -1,0 +1,50 @@
+{
+  "id": "gravity-forms-advanced",
+  "title": "Advanced Gravity Forms Features",
+  "description": "Master advanced features like conditional logic, file uploads, and multi-page forms.",
+  "category": "gravity-forms",
+  "tags": ["gravity-forms", "advanced", "forms", "conditional-logic"],
+  "image": "https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?auto=format&fit=crop&q=80&w=800&h=400",
+  "blocks": [
+    {
+      "id": "intro",
+      "type": "heading",
+      "content": "<h2>Advanced Gravity Forms Features</h2>",
+      "order": 0
+    },
+    {
+      "id": "overview",
+      "type": "text",
+      "content": "<p>Take your forms to the next level with advanced Gravity Forms features. Learn how to create sophisticated forms that adapt to user input and handle complex data collection scenarios.</p>",
+      "order": 1
+    },
+    {
+      "id": "conditional-logic",
+      "type": "heading",
+      "content": "<h3>Mastering Conditional Logic</h3>",
+      "order": 2
+    },
+    {
+      "id": "conditional-content",
+      "type": "text",
+      "content": "<p>Conditional logic allows you to show or hide fields based on user selections. Here's how to use it effectively:</p><ul><li>Setting up field conditions</li><li>Creating dependent field relationships</li><li>Using multiple conditions</li><li>Testing conditional logic</li></ul>",
+      "order": 3
+    },
+    {
+      "id": "file-uploads",
+      "type": "heading",
+      "content": "<h3>File Upload Fields</h3>",
+      "order": 4
+    },
+    {
+      "id": "upload-content",
+      "type": "text",
+      "content": "<p>Configure secure file uploads:</p><ul><li>Setting allowed file types</li><li>Managing file size limits</li><li>Handling multiple file uploads</li><li>Securing uploaded files</li></ul>",
+      "order": 5
+    }
+  ],
+  "createdAt": "2024-03-15T00:00:00.000Z",
+  "updatedAt": "2024-03-15T00:00:00.000Z",
+  "author": "admin",
+  "status": "published"
+}

@@ -1,0 +1,51 @@
+{
+  "id": "wordpress-backup-restore",
+  "title": "WordPress Backup and Restore",
+  "description": "Learn how to properly backup your WordPress site and restore it when needed.",
+  "priority": 7,
+  "category": "wordpress",
+  "tags": ["wordpress", "backup", "security", "maintenance"],
+  "image": "https://images.unsplash.com/photo-1507925921958-8a62f3d1a50d?auto=format&fit=crop&q=80&w=800&h=400",
+  "blocks": [
+    {
+      "id": "intro",
+      "type": "heading",
+      "content": "<h2>Backup and Restore Procedures</h2>",
+      "order": 0
+    },
+    {
+      "id": "overview",
+      "type": "text",
+      "content": "<p>Regular backups are crucial for website security and peace of mind. Learn how to implement a robust backup strategy and restore your site when needed.</p>",
+      "order": 1
+    },
+    {
+      "id": "backup-types",
+      "type": "heading",
+      "content": "<h3>Types of Backups</h3>",
+      "order": 2
+    },
+    {
+      "id": "backup-content",
+      "type": "text",
+      "content": "<p>Essential backup components:</p><ul><li>Database backups</li><li>File system backups</li><li>Plugin and theme files</li><li>Media library backup</li><li>Configuration files</li></ul>",
+      "order": 3
+    },
+    {
+      "id": "restore",
+      "type": "heading",
+      "content": "<h3>Restoration Process</h3>",
+      "order": 4
+    },
+    {
+      "id": "restore-content",
+      "type": "text",
+      "content": "<p>Steps for successful restoration:</p><ul><li>Database restoration</li><li>File system recovery</li><li>Configuration update</li><li>Testing procedures</li><li>Troubleshooting common issues</li></ul>",
+      "order": 5
+    }
+  ],
+  "createdAt": "2024-03-15T00:00:00.000Z",
+  "updatedAt": "2024-03-15T00:00:00.000Z",
+  "author": "admin",
+  "status": "published"
+}

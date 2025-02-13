@@ -1,0 +1,50 @@
+{
+  "id": "gravity-forms-styling",
+  "title": "Styling Gravity Forms",
+  "description": "Learn how to customize the appearance of your forms with CSS and theme integration.",
+  "category": "gravity-forms",
+  "tags": ["gravity-forms", "styling", "css", "design"],
+  "image": "https://images.unsplash.com/photo-1507721999472-8ed4421c4af2?auto=format&fit=crop&q=80&w=800&h=400",
+  "blocks": [
+    {
+      "id": "intro",
+      "type": "heading",
+      "content": "<h2>Customizing Form Appearance</h2>",
+      "order": 0
+    },
+    {
+      "id": "overview",
+      "type": "text",
+      "content": "<p>Make your forms match your website's design perfectly with custom styling. This guide covers everything from basic CSS tweaks to complete theme integration.</p>",
+      "order": 1
+    },
+    {
+      "id": "basic-styling",
+      "type": "heading",
+      "content": "<h3>Basic CSS Styling</h3>",
+      "order": 2
+    },
+    {
+      "id": "css-content",
+      "type": "text",
+      "content": "<p>Essential CSS techniques for form styling:</p><ul><li>Customizing input fields</li><li>Styling buttons and submit elements</li><li>Modifying field labels and descriptions</li><li>Creating responsive layouts</li></ul>",
+      "order": 3
+    },
+    {
+      "id": "theme-integration",
+      "type": "heading",
+      "content": "<h3>Theme Integration</h3>",
+      "order": 4
+    },
+    {
+      "id": "theme-content",
+      "type": "text",
+      "content": "<p>Seamlessly integrate forms with your theme:</p><ul><li>Using theme color schemes</li><li>Matching typography</li><li>Responsive breakpoints</li><li>Custom form templates</li></ul>",
+      "order": 5
+    }
+  ],
+  "createdAt": "2024-03-15T00:00:00.000Z",
+  "updatedAt": "2024-03-15T00:00:00.000Z",
+  "author": "admin",
+  "status": "published"
+}

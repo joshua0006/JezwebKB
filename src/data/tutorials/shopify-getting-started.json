@@ -1,0 +1,51 @@
+{
+  "id": "shopify-getting-started",
+  "title": "Getting Started with Shopify",
+  "description": "Learn the fundamentals of setting up and managing your Shopify store.",
+  "priority": 8,
+  "category": "shopify",
+  "tags": ["shopify", "basics", "getting-started", "e-commerce"],
+  "image": "https://images.unsplash.com/photo-1472851294608-062f824d29cc?auto=format&fit=crop&q=80&w=800&h=400",
+  "blocks": [
+    {
+      "id": "intro",
+      "type": "heading",
+      "content": "<h2>Introduction to Shopify</h2>",
+      "order": 0
+    },
+    {
+      "id": "overview",
+      "type": "text",
+      "content": "<p>Shopify is a powerful e-commerce platform that helps you create and manage your online store. This guide will walk you through the essential first steps.</p>",
+      "order": 1
+    },
+    {
+      "id": "dashboard",
+      "type": "heading",
+      "content": "<h3>Understanding the Dashboard</h3>",
+      "order": 2
+    },
+    {
+      "id": "dashboard-content",
+      "type": "text",
+      "content": "<p>Key areas of your Shopify dashboard:</p><ul><li>Orders and inventory management</li><li>Product catalog setup</li><li>Customer management</li><li>Analytics and reports</li><li>Store settings and configuration</li></ul>",
+      "order": 3
+    },
+    {
+      "id": "first-steps",
+      "type": "heading",
+      "content": "<h3>First Steps</h3>",
+      "order": 4
+    },
+    {
+      "id": "steps-content",
+      "type": "text",
+      "content": "<p>Essential setup tasks:</p><ul><li>Domain configuration</li><li>Payment gateway setup</li><li>Shipping rate configuration</li><li>Tax settings</li><li>Store policies creation</li></ul>",
+      "order": 5
+    }
+  ],
+  "createdAt": "2024-03-15T00:00:00.000Z",
+  "updatedAt": "2024-03-15T00:00:00.000Z",
+  "author": "admin",
+  "status": "published"
+}

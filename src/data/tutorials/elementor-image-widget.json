@@ -1,0 +1,50 @@
+{
+  "id": "elementor-image-widget",
+  "title": "Working with the Image Widget",
+  "description": "Master Elementor's Image widget to add and style images on your website.",
+  "category": "elementor",
+  "tags": ["elementor", "widgets", "images", "media"],
+  "image": "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&q=80&w=800&h=400",
+  "blocks": [
+    {
+      "id": "intro",
+      "type": "heading",
+      "content": "<h2>The Image Widget Explained</h2>",
+      "order": 0
+    },
+    {
+      "id": "overview",
+      "type": "text",
+      "content": "<p>The Image widget is essential for adding visual content to your website. Learn how to use it effectively to create stunning visual layouts.</p>",
+      "order": 1
+    },
+    {
+      "id": "features",
+      "type": "heading",
+      "content": "<h3>Core Features</h3>",
+      "order": 2
+    },
+    {
+      "id": "features-content",
+      "type": "text",
+      "content": "<p>Key capabilities of the Image widget:</p><ul><li>Image upload and selection</li><li>Size and alignment controls</li><li>Lightbox functionality</li><li>Custom URL linking</li><li>Alt text for SEO</li></ul>",
+      "order": 3
+    },
+    {
+      "id": "effects",
+      "type": "heading",
+      "content": "<h3>Image Effects</h3>",
+      "order": 4
+    },
+    {
+      "id": "effects-content",
+      "type": "text",
+      "content": "<p>Enhance your images with these effects:</p><ul><li>Hover animations</li><li>CSS filters</li><li>Border and shadow styling</li><li>Opacity controls</li><li>Custom masks and shapes</li></ul>",
+      "order": 5
+    }
+  ],
+  "createdAt": "2024-03-15T00:00:00.000Z",
+  "updatedAt": "2024-03-15T00:00:00.000Z",
+  "author": "admin",
+  "status": "published"
+}

@@ -1,0 +1,45 @@
+{
+  "id": "elementor-basics",
+  "title": "Elementor Page Builder Tutorial",
+  "description": "Master the Elementor page builder to create beautiful WordPress pages.",
+  "priority": 2,
+  "category": "elementor",
+  "tags": ["elementor", "page-builder", "design"],
+  "image": "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=800&h=400",
+  "blocks": [
+    {
+      "id": "intro",
+      "type": "heading",
+      "content": "<h2>Getting Started with Elementor</h2>",
+      "order": 0
+    },
+    {
+      "id": "what-is-elementor",
+      "type": "text",
+      "content": "<p>Elementor is a powerful drag-and-drop page builder for WordPress that revolutionizes the way you create content. With its intuitive interface and extensive features, you can design professional-looking pages without any coding knowledge.</p>",
+      "order": 1
+    },
+    {
+      "id": "interface-heading",
+      "type": "heading",
+      "content": "<h3>Understanding the Interface</h3>",
+      "order": 2
+    },
+    {
+      "id": "interface-overview",
+      "type": "text",
+      "content": "<p>The Elementor interface consists of two main parts:</p><ul><li>The preview area where you see your changes in real-time</li><li>The panel on the left containing all your widgets and settings</li></ul>",
+      "order": 3
+    },
+    {
+      "id": "interface-image",
+      "type": "image",
+      "content": "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=1200&h=800",
+      "order": 4
+    }
+  ],
+  "createdAt": "2024-03-15T00:00:00.000Z",
+  "updatedAt": "2024-03-15T00:00:00.000Z",
+  "author": "admin",
+  "status": "published"
+}

@@ -1,0 +1,51 @@
+{
+  "id": "elementor-widgets-guide",
+  "title": "Essential Elementor Widgets",
+  "description": "Learn about the most important Elementor widgets and how to use them effectively.",
+  "priority": 11,
+  "category": "elementor",
+  "tags": ["elementor", "widgets", "components", "intermediate"],
+  "image": "https://images.unsplash.com/photo-1499951360447-b19be8fe80f5?auto=format&fit=crop&q=80&w=800&h=400",
+  "blocks": [
+    {
+      "id": "intro",
+      "type": "heading",
+      "content": "<h2>Essential Elementor Widgets</h2>",
+      "order": 0
+    },
+    {
+      "id": "overview",
+      "type": "text",
+      "content": "<p>Widgets are the building blocks of your Elementor pages. Understanding how to use them effectively is key to creating professional layouts.</p>",
+      "order": 1
+    },
+    {
+      "id": "basic-widgets",
+      "type": "heading",
+      "content": "<h3>Basic Widgets</h3>",
+      "order": 2
+    },
+    {
+      "id": "basic-content",
+      "type": "text",
+      "content": "<p>Start with these fundamental widgets:</p><ul><li><strong>Heading:</strong> For titles and subtitles with typography controls</li><li><strong>Text Editor:</strong> For paragraphs and formatted text</li><li><strong>Image:</strong> For adding and styling images</li><li><strong>Button:</strong> For calls-to-action</li><li><strong>Video:</strong> For embedding videos from various sources</li></ul>",
+      "order": 3
+    },
+    {
+      "id": "advanced-widgets",
+      "type": "heading",
+      "content": "<h3>Advanced Widgets</h3>",
+      "order": 4
+    },
+    {
+      "id": "advanced-content",
+      "type": "text",
+      "content": "<p>These widgets offer more complex functionality:</p><ul><li><strong>Form:</strong> Create contact and subscription forms</li><li><strong>Gallery:</strong> Display image collections with various layouts</li><li><strong>Carousel:</strong> Create sliding content sections</li><li><strong>Tabs:</strong> Organize content in tabbed interfaces</li><li><strong>Accordion:</strong> Create expandable content sections</li></ul>",
+      "order": 5
+    }
+  ],
+  "createdAt": "2024-03-15T00:00:00.000Z",
+  "updatedAt": "2024-03-15T00:00:00.000Z",
+  "author": "admin",
+  "status": "published"
+}

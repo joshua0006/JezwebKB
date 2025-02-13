@@ -1,0 +1,51 @@
+{
+  "id": "shopify-product-management",
+  "title": "Product Management in Shopify",
+  "description": "Master the art of managing your product catalog, variants, and inventory in Shopify.",
+  "priority": 9,
+  "category": "shopify",
+  "tags": ["shopify", "products", "inventory", "e-commerce"],
+  "image": "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=800&h=400",
+  "blocks": [
+    {
+      "id": "intro",
+      "type": "heading",
+      "content": "<h2>Managing Your Product Catalog</h2>",
+      "order": 0
+    },
+    {
+      "id": "overview",
+      "type": "text",
+      "content": "<p>Effective product management is crucial for your online store's success. Learn how to organize and optimize your product catalog.</p>",
+      "order": 1
+    },
+    {
+      "id": "adding-products",
+      "type": "heading",
+      "content": "<h3>Adding Products</h3>",
+      "order": 2
+    },
+    {
+      "id": "products-content",
+      "type": "text",
+      "content": "<p>Essential product setup steps:</p><ul><li>Product information and descriptions</li><li>Image optimization and management</li><li>Pricing strategies</li><li>SEO optimization for products</li><li>Product categorization</li></ul>",
+      "order": 3
+    },
+    {
+      "id": "variants",
+      "type": "heading",
+      "content": "<h3>Managing Variants</h3>",
+      "order": 4
+    },
+    {
+      "id": "variants-content",
+      "type": "text",
+      "content": "<p>Handle product variations effectively:</p><ul><li>Creating variant options</li><li>Setting variant prices</li><li>Managing variant inventory</li><li>Bulk variant editing</li><li>Variant image assignment</li></ul>",
+      "order": 5
+    }
+  ],
+  "createdAt": "2024-03-15T00:00:00.000Z",
+  "updatedAt": "2024-03-15T00:00:00.000Z",
+  "author": "admin",
+  "status": "published"
+}

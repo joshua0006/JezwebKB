@@ -1,0 +1,85 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* TipTap Editor Styles */
+.ProseMirror {
+  > * + * {
+    margin-top: 0.75em;
+  }
+
+  ul,
+  ol {
+    padding: 0 1rem;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    line-height: 1.1;
+    font-weight: 700;
+  }
+
+  code {
+    background-color: rgba(#616161, 0.1);
+    border-radius: 0.25em;
+    padding: 0.25em;
+    box-decoration-break: clone;
+  }
+
+  pre {
+    background: #0D0D0D;
+    color: #FFF;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+
+    code {
+      color: inherit;
+      padding: 0;
+      background: none;
+    }
+  }
+
+  blockquote {
+    padding-left: 1rem;
+    border-left: 4px solid #e5e7eb;
+  }
+
+  hr {
+    border: none;
+    border-top: 2px solid rgba(#0D0D0D, 0.1);
+    margin: 2rem 0;
+  }
+}
+
+.ProseMirror:focus {
+  outline: none;
+}
+
+/* Text alignment styles */
+.ProseMirror .is-text-left {
+  text-align: left;
+}
+
+.ProseMirror .is-text-center {
+  text-align: center;
+}
+
+.ProseMirror .is-text-right {
+  text-align: right;
+}
+
+.ProseMirror .is-text-justify {
+  text-align: justify;
+}
+
+.ProseMirror p.is-editor-empty:first-child::before {
+  color: #adb5bd;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}

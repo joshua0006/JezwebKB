@@ -1,0 +1,51 @@
+{
+  "id": "shopify-theme-customization",
+  "title": "Customizing Your Shopify Theme",
+  "description": "Learn how to customize your Shopify theme to create a unique and branded shopping experience.",
+  "priority": 10,
+  "category": "shopify",
+  "tags": ["shopify", "design", "themes", "customization"],
+  "image": "https://images.unsplash.com/photo-1523726491678-bf852e717f6a?auto=format&fit=crop&q=80&w=800&h=400",
+  "blocks": [
+    {
+      "id": "intro",
+      "type": "heading",
+      "content": "<h2>Theme Customization Guide</h2>",
+      "order": 0
+    },
+    {
+      "id": "overview",
+      "type": "text",
+      "content": "<p>Your store's design plays a crucial role in converting visitors into customers. Learn how to customize your theme for maximum impact.</p>",
+      "order": 1
+    },
+    {
+      "id": "theme-settings",
+      "type": "heading",
+      "content": "<h3>Theme Settings</h3>",
+      "order": 2
+    },
+    {
+      "id": "settings-content",
+      "type": "text",
+      "content": "<p>Essential customization areas:</p><ul><li>Colors and typography</li><li>Header and footer setup</li><li>Homepage sections</li><li>Collection layouts</li><li>Product page design</li></ul>",
+      "order": 3
+    },
+    {
+      "id": "advanced",
+      "type": "heading",
+      "content": "<h3>Advanced Customization</h3>",
+      "order": 4
+    },
+    {
+      "id": "advanced-content",
+      "type": "text",
+      "content": "<p>Take your design further:</p><ul><li>Custom CSS modifications</li><li>Liquid template editing</li><li>Section and block customization</li><li>Mobile responsiveness</li><li>Performance optimization</li></ul>",
+      "order": 5
+    }
+  ],
+  "createdAt": "2024-03-15T00:00:00.000Z",
+  "updatedAt": "2024-03-15T00:00:00.000Z",
+  "author": "admin",
+  "status": "published"
+}

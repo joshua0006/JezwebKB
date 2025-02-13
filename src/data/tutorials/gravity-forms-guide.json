@@ -1,0 +1,45 @@
+{
+  "id": "gravity-forms-guide",
+  "title": "Creating Forms with Gravity Forms",
+  "description": "Learn how to create and manage forms using Gravity Forms.",
+  "priority": 3,
+  "category": "gravity-forms",
+  "tags": ["forms", "gravity-forms", "contact"],
+  "image": "https://images.unsplash.com/photo-1579389083078-4e7018379f7e?auto=format&fit=crop&q=80&w=800&h=400",
+  "blocks": [
+    {
+      "id": "intro",
+      "type": "heading",
+      "content": "<h2>Introduction to Gravity Forms</h2>",
+      "order": 0
+    },
+    {
+      "id": "overview",
+      "type": "text",
+      "content": "<p>Gravity Forms is the most advanced form builder plugin for WordPress. In this tutorial, we'll explore how to create powerful forms that can collect and process user data effectively.</p>",
+      "order": 1
+    },
+    {
+      "id": "first-form-heading",
+      "type": "heading",
+      "content": "<h3>Creating Your First Form</h3>",
+      "order": 2
+    },
+    {
+      "id": "first-form-steps",
+      "type": "text",
+      "content": "<p>Follow these steps to create your first form:</p><ol><li>Navigate to Forms > New Form in your WordPress dashboard</li><li>Give your form a name and description</li><li>Start adding fields from the right panel</li><li>Configure field settings and validation rules</li><li>Save and embed your form</li></ol>",
+      "order": 3
+    },
+    {
+      "id": "demo-video",
+      "type": "video",
+      "content": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+      "order": 4
+    }
+  ],
+  "createdAt": "2024-03-15T00:00:00.000Z",
+  "updatedAt": "2024-03-15T00:00:00.000Z",
+  "author": "admin",
+  "status": "published"
+}

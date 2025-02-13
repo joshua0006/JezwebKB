@@ -1,0 +1,46 @@
+{
+  "id": "getting-started-wordpress",
+  "title": "Getting Started with WordPress",
+  "description": "Learn the basics of WordPress and how to manage your website effectively.",
+  "priority": 1,
+  "category": "wordpress",
+  "tags": ["basics", "getting-started", "wordpress"],
+  "image": "https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?auto=format&fit=crop&q=80&w=800&h=400",
+  "videoUrl": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+  "blocks": [
+    {
+      "id": "intro",
+      "type": "heading",
+      "content": "<h2>Introduction to WordPress</h2>",
+      "order": 0
+    },
+    {
+      "id": "overview",
+      "type": "text",
+      "content": "<p>WordPress is a powerful content management system that powers millions of websites worldwide. This comprehensive guide will help you get started with managing your WordPress website effectively.</p>",
+      "order": 1
+    },
+    {
+      "id": "dashboard-intro",
+      "type": "heading",
+      "content": "<h3>Understanding the WordPress Dashboard</h3>",
+      "order": 2
+    },
+    {
+      "id": "dashboard-content",
+      "type": "text",
+      "content": "<p>When you log in to your WordPress site, you'll be presented with the admin dashboard. This is your control center for managing all aspects of your website.</p>",
+      "order": 3
+    },
+    {
+      "id": "key-areas",
+      "type": "text",
+      "content": "<p>Key areas we'll cover:</p><ul><li>Posts and Pages: Learn how to create and manage your content</li><li>Media Library: Understand how to handle images and other media files</li><li>Themes and Customization: Make your site look exactly how you want</li><li>Plugins: Extend your site's functionality</li><li>Users: Manage who has access to your site</li></ul>",
+      "order": 4
+    }
+  ],
+  "createdAt": "2024-03-15T00:00:00.000Z",
+  "updatedAt": "2024-03-15T00:00:00.000Z",
+  "author": "admin",
+  "status": "published"
+}

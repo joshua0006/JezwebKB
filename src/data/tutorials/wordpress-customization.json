@@ -1,0 +1,81 @@
+{
+  "id": "wordpress-customization",
+  "title": "WordPress Theme Customization",
+  "description": "Learn how to customize your WordPress theme without coding using built-in tools and features.",
+  "priority": 14,
+  "category": "wordpress",
+  "tags": ["wordpress", "themes", "customization", "design"],
+  "image": "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?auto=format&fit=crop&q=80&w=800&h=400",
+  "blocks": [
+    {
+      "id": "intro",
+      "type": "heading",
+      "content": "<h2>Customizing Your WordPress Theme</h2>",
+      "order": 0
+    },
+    {
+      "id": "overview",
+      "type": "text",
+      "content": "<p>Make your WordPress site unique by customizing your theme using built-in tools. No coding required!</p>",
+      "order": 1
+    },
+    {
+      "id": "customizer-icon",
+      "type": "icon",
+      "content": "{\"icon\":\"Palette\",\"size\":\"xlarge\",\"color\":\"indigo\"}",
+      "order": 2
+    },
+    {
+      "id": "spacer-1",
+      "type": "spacer",
+      "content": "{\"height\":\"medium\"}",
+      "order": 3
+    },
+    {
+      "id": "customizer",
+      "type": "heading",
+      "content": "<h3>WordPress Customizer</h3>",
+      "order": 4
+    },
+    {
+      "id": "customizer-content",
+      "type": "text",
+      "content": "<p>The WordPress Customizer is your primary tool for theme customization. Access it by going to Appearance > Customize in your dashboard.</p>",
+      "order": 5
+    },
+    {
+      "id": "video-demo",
+      "type": "video",
+      "content": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+      "order": 6
+    },
+    {
+      "id": "divider-1",
+      "type": "divider",
+      "content": "{\"style\":\"solid\",\"width\":\"full\",\"color\":\"indigo\"}",
+      "order": 7
+    },
+    {
+      "id": "key-areas",
+      "type": "heading",
+      "content": "<h3>Key Customization Areas</h3>",
+      "order": 8
+    },
+    {
+      "id": "areas-content",
+      "type": "text",
+      "content": "<p>Focus on these key areas for maximum impact:</p><ul><li>Site Identity (Logo, Title, Tagline)</li><li>Colors and Typography</li><li>Header and Footer Options</li><li>Layout Settings</li><li>Custom CSS (for advanced users)</li></ul>",
+      "order": 9
+    },
+    {
+      "id": "elementor-cta",
+      "type": "button",
+      "content": "{\"text\":\"Try Elementor for Advanced Customization\",\"url\":\"/tutorials/elementor-basics\",\"variant\":\"primary\"}",
+      "order": 10
+    }
+  ],
+  "createdAt": "2024-03-15T00:00:00.000Z",
+  "updatedAt": "2024-03-15T00:00:00.000Z",
+  "author": "admin",
+  "status": "published"
+}

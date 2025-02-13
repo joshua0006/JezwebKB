@@ -1,0 +1,87 @@
+{
+  "id": "wordpress-plugins-guide",
+  "title": "Essential WordPress Plugins Guide",
+  "description": "Discover must-have WordPress plugins to enhance your website's functionality.",
+  "priority": 12,
+  "category": "wordpress",
+  "tags": ["wordpress", "plugins", "functionality", "intermediate"],
+  "image": "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&q=80&w=800&h=400",
+  "blocks": [
+    {
+      "id": "intro",
+      "type": "heading",
+      "content": "<h2>Essential WordPress Plugins</h2>",
+      "order": 0
+    },
+    {
+      "id": "overview",
+      "type": "text",
+      "content": "<p>Plugins are essential tools that extend WordPress functionality. This guide will help you choose and manage the right plugins for your website.</p>",
+      "order": 1
+    },
+    {
+      "id": "warning",
+      "type": "text",
+      "content": "<p class='text-red-600'>⚠️ Important: Always backup your site before installing new plugins!</p>",
+      "order": 2
+    },
+    {
+      "id": "divider-1",
+      "type": "divider",
+      "content": "{\"style\":\"solid\",\"width\":\"full\",\"color\":\"indigo\"}",
+      "order": 3
+    },
+    {
+      "id": "seo-plugins",
+      "type": "heading",
+      "content": "<h3>SEO Plugins</h3>",
+      "order": 4
+    },
+    {
+      "id": "seo-icon",
+      "type": "icon",
+      "content": "{\"icon\":\"Search\",\"size\":\"large\",\"color\":\"indigo\"}",
+      "order": 5
+    },
+    {
+      "id": "seo-content",
+      "type": "text",
+      "content": "<p>Essential SEO plugins for WordPress:</p><ul><li>Yoast SEO: Complete SEO solution</li><li>Rank Math: Modern SEO plugin with advanced features</li><li>All in One SEO Pack: User-friendly SEO toolkit</li></ul>",
+      "order": 6
+    },
+    {
+      "id": "spacer-1",
+      "type": "spacer",
+      "content": "{\"height\":\"medium\"}",
+      "order": 7
+    },
+    {
+      "id": "security-plugins",
+      "type": "heading",
+      "content": "<h3>Security Plugins</h3>",
+      "order": 8
+    },
+    {
+      "id": "security-icon",
+      "type": "icon",
+      "content": "{\"icon\":\"Shield\",\"size\":\"large\",\"color\":\"green\"}",
+      "order": 9
+    },
+    {
+      "id": "security-content",
+      "type": "text",
+      "content": "<p>Protect your site with these security plugins:</p><ul><li>Wordfence Security: Firewall and malware scanner</li><li>Sucuri Security: Security auditing and monitoring</li><li>iThemes Security: Comprehensive security solution</li></ul>",
+      "order": 10
+    },
+    {
+      "id": "learn-more",
+      "type": "button",
+      "content": "{\"text\":\"Learn More About WordPress Security\",\"url\":\"/tutorials/wordpress-security\",\"variant\":\"primary\"}",
+      "order": 11
+    }
+  ],
+  "createdAt": "2024-03-15T00:00:00.000Z",
+  "updatedAt": "2024-03-15T00:00:00.000Z",
+  "author": "admin",
+  "status": "published"
+}

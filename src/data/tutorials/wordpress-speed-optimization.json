@@ -1,0 +1,51 @@
+{
+  "id": "wordpress-speed-optimization",
+  "title": "Speed Up Your WordPress Site",
+  "description": "Optimize your WordPress website for maximum performance and faster loading times.",
+  "priority": 6,
+  "category": "wordpress",
+  "tags": ["wordpress", "performance", "optimization", "speed"],
+  "image": "https://images.unsplash.com/photo-1600132806370-bf17e65e942f?auto=format&fit=crop&q=80&w=800&h=400",
+  "blocks": [
+    {
+      "id": "intro",
+      "type": "heading",
+      "content": "<h2>WordPress Performance Optimization</h2>",
+      "order": 0
+    },
+    {
+      "id": "overview",
+      "type": "text",
+      "content": "<p>A fast-loading website is crucial for user experience and SEO. Learn how to optimize your WordPress site for maximum performance.</p>",
+      "order": 1
+    },
+    {
+      "id": "caching",
+      "type": "heading",
+      "content": "<h3>Caching Solutions</h3>",
+      "order": 2
+    },
+    {
+      "id": "caching-content",
+      "type": "text",
+      "content": "<p>Implement effective caching:</p><ul><li>Page caching configuration</li><li>Browser caching setup</li><li>Object caching with Redis</li><li>CDN integration</li><li>Cache preloading strategies</li></ul>",
+      "order": 3
+    },
+    {
+      "id": "images",
+      "type": "heading",
+      "content": "<h3>Image Optimization</h3>",
+      "order": 4
+    },
+    {
+      "id": "images-content",
+      "type": "text",
+      "content": "<p>Optimize your media files:</p><ul><li>Image compression techniques</li><li>Lazy loading implementation</li><li>WebP format conversion</li><li>Responsive images setup</li><li>Image dimension optimization</li></ul>",
+      "order": 5
+    }
+  ],
+  "createdAt": "2024-03-15T00:00:00.000Z",
+  "updatedAt": "2024-03-15T00:00:00.000Z",
+  "author": "admin",
+  "status": "published"
+}

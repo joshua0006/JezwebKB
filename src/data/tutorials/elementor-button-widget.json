@@ -1,0 +1,50 @@
+{
+  "id": "elementor-button-widget",
+  "title": "Creating Effective Buttons",
+  "description": "Design eye-catching call-to-action buttons using Elementor's Button widget.",
+  "category": "elementor",
+  "tags": ["elementor", "widgets", "buttons", "cta"],
+  "image": "https://images.unsplash.com/photo-1614292253256-38511cae1dee?auto=format&fit=crop&q=80&w=800&h=400",
+  "blocks": [
+    {
+      "id": "intro",
+      "type": "heading",
+      "content": "<h2>Button Widget Guide</h2>",
+      "order": 0
+    },
+    {
+      "id": "overview",
+      "type": "text",
+      "content": "<p>Buttons are crucial for user interaction and conversions. Learn how to create effective call-to-action buttons that drive engagement.</p>",
+      "order": 1
+    },
+    {
+      "id": "styles",
+      "type": "heading",
+      "content": "<h3>Button Styles</h3>",
+      "order": 2
+    },
+    {
+      "id": "styles-content",
+      "type": "text",
+      "content": "<p>Available button styling options:</p><ul><li>Background colors and gradients</li><li>Border customization</li><li>Icon integration</li><li>Size and padding</li><li>Typography settings</li></ul>",
+      "order": 3
+    },
+    {
+      "id": "hover",
+      "type": "heading",
+      "content": "<h3>Hover Effects</h3>",
+      "order": 4
+    },
+    {
+      "id": "hover-content",
+      "type": "text",
+      "content": "<p>Create engaging hover animations:</p><ul><li>Color transitions</li><li>Background effects</li><li>Border animations</li><li>Icon movements</li><li>Custom hover states</li></ul>",
+      "order": 5
+    }
+  ],
+  "createdAt": "2024-03-15T00:00:00.000Z",
+  "updatedAt": "2024-03-15T00:00:00.000Z",
+  "author": "admin",
+  "status": "published"
+}

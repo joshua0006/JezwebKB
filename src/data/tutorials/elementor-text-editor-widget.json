@@ -1,0 +1,50 @@
+{
+  "id": "elementor-text-editor-widget",
+  "title": "Using the Text Editor Widget",
+  "description": "Learn how to format and style text content using Elementor's Text Editor widget.",
+  "category": "elementor",
+  "tags": ["elementor", "widgets", "text", "content"],
+  "image": "https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&q=80&w=800&h=400",
+  "blocks": [
+    {
+      "id": "intro",
+      "type": "heading",
+      "content": "<h2>Text Editor Widget Basics</h2>",
+      "order": 0
+    },
+    {
+      "id": "overview",
+      "type": "text",
+      "content": "<p>The Text Editor widget is your go-to tool for adding and formatting text content in Elementor. Master its features to create engaging content.</p>",
+      "order": 1
+    },
+    {
+      "id": "formatting",
+      "type": "heading",
+      "content": "<h3>Text Formatting</h3>",
+      "order": 2
+    },
+    {
+      "id": "formatting-content",
+      "type": "text",
+      "content": "<p>Essential formatting options:</p><ul><li>Basic text formatting (bold, italic, underline)</li><li>Paragraph styling</li><li>Lists and indentation</li><li>Text alignment</li><li>Links and anchors</li></ul>",
+      "order": 3
+    },
+    {
+      "id": "advanced",
+      "type": "heading",
+      "content": "<h3>Advanced Features</h3>",
+      "order": 4
+    },
+    {
+      "id": "advanced-content",
+      "type": "text",
+      "content": "<p>Take advantage of advanced features:</p><ul><li>Custom typography</li><li>Drop cap</li><li>Column count</li><li>Text wrapping</li><li>Custom CSS classes</li></ul>",
+      "order": 5
+    }
+  ],
+  "createdAt": "2024-03-15T00:00:00.000Z",
+  "updatedAt": "2024-03-15T00:00:00.000Z",
+  "author": "admin",
+  "status": "published"
+}

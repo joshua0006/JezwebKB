@@ -1,0 +1,93 @@
+{
+  "id": "wordpress-maintenance",
+  "title": "WordPress Maintenance Guide",
+  "description": "Learn how to keep your WordPress site running smoothly with regular maintenance tasks.",
+  "priority": 13,
+  "category": "wordpress",
+  "tags": ["wordpress", "maintenance", "optimization", "updates"],
+  "image": "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&q=80&w=800&h=400",
+  "blocks": [
+    {
+      "id": "intro",
+      "type": "heading",
+      "content": "<h2>WordPress Maintenance Checklist</h2>",
+      "order": 0
+    },
+    {
+      "id": "overview",
+      "type": "text",
+      "content": "<p>Regular maintenance is crucial for keeping your WordPress site secure, fast, and reliable. Follow this comprehensive checklist to maintain your site effectively.</p>",
+      "order": 1
+    },
+    {
+      "id": "checklist-icon",
+      "type": "icon",
+      "content": "{\"icon\":\"ClipboardCheck\",\"size\":\"xlarge\",\"color\":\"indigo\"}",
+      "order": 2
+    },
+    {
+      "id": "spacer-1",
+      "type": "spacer",
+      "content": "{\"height\":\"medium\"}",
+      "order": 3
+    },
+    {
+      "id": "daily-tasks",
+      "type": "heading",
+      "content": "<h3>Daily Tasks</h3>",
+      "order": 4
+    },
+    {
+      "id": "daily-content",
+      "type": "text",
+      "content": "<p>Tasks to perform daily:</p><ul><li>Monitor site uptime</li><li>Check for plugin/theme updates</li><li>Review security logs</li><li>Backup your site</li></ul>",
+      "order": 5
+    },
+    {
+      "id": "divider-1",
+      "type": "divider",
+      "content": "{\"style\":\"dashed\",\"width\":\"3/4\",\"color\":\"gray\"}",
+      "order": 6
+    },
+    {
+      "id": "weekly-tasks",
+      "type": "heading",
+      "content": "<h3>Weekly Tasks</h3>",
+      "order": 7
+    },
+    {
+      "id": "weekly-content",
+      "type": "text",
+      "content": "<p>Tasks to perform weekly:</p><ul><li>Update plugins and themes</li><li>Clean up spam comments</li><li>Check site speed</li><li>Review error logs</li></ul>",
+      "order": 8
+    },
+    {
+      "id": "divider-2",
+      "type": "divider",
+      "content": "{\"style\":\"dashed\",\"width\":\"3/4\",\"color\":\"gray\"}",
+      "order": 9
+    },
+    {
+      "id": "monthly-tasks",
+      "type": "heading",
+      "content": "<h3>Monthly Tasks</h3>",
+      "order": 10
+    },
+    {
+      "id": "monthly-content",
+      "type": "text",
+      "content": "<p>Tasks to perform monthly:</p><ul><li>Database optimization</li><li>Content audit</li><li>Analytics review</li><li>Full site backup</li></ul>",
+      "order": 11
+    },
+    {
+      "id": "backup-cta",
+      "type": "button",
+      "content": "{\"text\":\"Learn About Backup Strategies\",\"url\":\"/tutorials/wordpress-backup-restore\",\"variant\":\"outline\"}",
+      "order": 12
+    }
+  ],
+  "createdAt": "2024-03-15T00:00:00.000Z",
+  "updatedAt": "2024-03-15T00:00:00.000Z",
+  "author": "admin",
+  "status": "published"
+}

@@ -1,0 +1,51 @@
+{
+  "id": "elementor-responsive-design",
+  "title": "Mastering Responsive Design in Elementor",
+  "description": "Create websites that look perfect on all devices using Elementor's responsive features.",
+  "priority": 12,
+  "category": "elementor",
+  "tags": ["elementor", "responsive", "mobile", "advanced"],
+  "image": "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?auto=format&fit=crop&q=80&w=800&h=400",
+  "blocks": [
+    {
+      "id": "intro",
+      "type": "heading",
+      "content": "<h2>Responsive Design with Elementor</h2>",
+      "order": 0
+    },
+    {
+      "id": "overview",
+      "type": "text",
+      "content": "<p>In today's mobile-first world, ensuring your website looks great on all devices is crucial. Elementor provides powerful tools for responsive design.</p>",
+      "order": 1
+    },
+    {
+      "id": "breakpoints",
+      "type": "heading",
+      "content": "<h3>Understanding Breakpoints</h3>",
+      "order": 2
+    },
+    {
+      "id": "breakpoints-content",
+      "type": "text",
+      "content": "<p>Elementor uses these main breakpoints:</p><ul><li><strong>Desktop:</strong> Default view (> 1024px)</li><li><strong>Tablet:</strong> 768px to 1024px</li><li><strong>Mobile:</strong> < 767px</li></ul><p>You can customize these breakpoints in Elementor's global settings.</p>",
+      "order": 3
+    },
+    {
+      "id": "responsive-controls",
+      "type": "heading",
+      "content": "<h3>Responsive Controls</h3>",
+      "order": 4
+    },
+    {
+      "id": "controls-content",
+      "type": "text",
+      "content": "<p>Key responsive features include:</p><ul><li>Device-specific visibility</li><li>Responsive margins and padding</li><li>Mobile-specific typography</li><li>Responsive image sizing</li><li>Column width adjustments</li></ul>",
+      "order": 5
+    }
+  ],
+  "createdAt": "2024-03-15T00:00:00.000Z",
+  "updatedAt": "2024-03-15T00:00:00.000Z",
+  "author": "admin",
+  "status": "published"
+}
