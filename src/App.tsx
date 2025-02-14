@@ -17,6 +17,7 @@ import { RequireAuth } from './components/auth/RequireAuth';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import { SEO } from './components/SEO';
 import { AppRoutes } from './routes';
+import { HelmetProvider } from 'react-helmet-async';
 
 function App() {
   const location = useLocation();
@@ -26,9 +27,11 @@ function App() {
   }, [location]);
 
   return (
-    <AuthProvider>
-      <AppRoutes />
-    </AuthProvider>
+    <HelmetProvider>
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
+    </HelmetProvider>
   );
 }
 

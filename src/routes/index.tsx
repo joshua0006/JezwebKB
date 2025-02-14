@@ -11,6 +11,7 @@ import { HomePage } from '../pages/HomePage';
 import { NotFound } from '../pages/NotFound';
 import { SignIn } from '../pages/SignIn';
 import { SignUp } from '../pages/SignUp';
+import { Profile } from '../pages/Profile';
 
 export function AppRoutes() {
   return (
@@ -38,10 +39,19 @@ export function AppRoutes() {
 
         {/* Protected routes */}
         <Route
-          path="/dashboard/*"
+          path="/dashboard"
           element={
-            <RequireAuth requiredRole="admin">
+            <RequireAuth>
               <Dashboard />
+            </RequireAuth>
+          }
+        />
+
+        <Route
+          path="/profile"
+          element={
+            <RequireAuth>
+              <Profile />
             </RequireAuth>
           }
         />

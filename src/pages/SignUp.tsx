@@ -1,29 +1,51 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+import { storage } from '../config/firebase';
+import { userService } from '../services/userService';
 
 export function SignUp() {
-  const navigate = useNavigate();
   const { signUp } = useAuth();
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [username, setUsername] = useState('');
+  const [profilePhoto, setProfilePhoto] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setProfilePhoto(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
+    if (!username.trim()) {
+      setError('Username is required');
       return;
     }
     
+    setIsSubmitting(true);
+    setError('');
+
     try {
-      await signUp(email, password);
+      // Pass username to signUp
+      await signUp(email, password, username.trim());
       navigate('/dashboard');
-    } catch (err) {
-      setError('Failed to create an account. Please try again.');
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Failed to create an account');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -34,7 +56,7 @@ export function SignUp() {
           <div className="bg-white rounded-lg shadow-xl p-8 space-y-6">
             <div className="text-center">
               <h1 className="text-4xl font-bold text-gray-900 mb-2">Create Account</h1>
-              <p className="text-gray-500">Join our community today</p>
+              <p className="text-gray-500">Get started with your free account</p>
             </div>
 
             {error && (
@@ -46,7 +68,58 @@ export function SignUp() {
               </div>
             )}
 
-            <form className="space-y-6" onSubmit={handleSubmit}>
+            <form className="space-y-6" onSubmit={handleSignUp}>
+              {/* Profile Photo Upload */}
+              <div className="flex justify-center">
+                <label className="cursor-pointer group relative">
+                  <div className="w-20 h-20 rounded-full border-2 border-dashed border-gray-200 group-hover:border-indigo-500 transition-colors overflow-hidden">
+                    {preview ? (
+                      <img src={preview} alt="Preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                        <svg className="w-8 h-8 text-gray-400 group-hover:text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
+                  <input
+                    type="file"
+                    onChange={handleFileChange}
+                    className="hidden"
+                    accept="image/*"
+                  />
+                  <div className="absolute bottom-0 right-0 bg-indigo-500 rounded-full p-1.5 border-2 border-white">
+                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                  </div>
+                </label>
+              </div>
+
+              {/* Username */}
+              <div>
+                <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
+                  Username
+                </label>
+                <div className="relative">
+                  <input
+                    id="username"
+                    type="text"
+                    required
+                    className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none"
+                    placeholder="Enter your username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                  />
+                  <svg className="w-5 h-5 absolute right-3 top-3.5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              </div>
+
+              {/* Email */}
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                   Email
@@ -54,9 +127,7 @@ export function SignUp() {
                 <div className="relative">
                   <input
                     id="email"
-                    name="email"
                     type="email"
-                    autoComplete="email"
                     required
                     className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none"
                     placeholder="Enter your email"
@@ -70,6 +141,7 @@ export function SignUp() {
                 </div>
               </div>
 
+              {/* Password */}
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                   Password
@@ -77,36 +149,12 @@ export function SignUp() {
                 <div className="relative">
                   <input
                     id="password"
-                    name="password"
                     type="password"
-                    autoComplete="new-password"
                     required
                     className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none"
-                    placeholder="Create a password"
+                    placeholder="Enter your password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                  />
-                  <svg className="w-5 h-5 absolute right-3 top-3.5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                  </svg>
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                  Confirm Password
-                </label>
-                <div className="relative">
-                  <input
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    type="password"
-                    autoComplete="new-password"
-                    required
-                    className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none"
-                    placeholder="Confirm your password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
                   />
                   <svg className="w-5 h-5 absolute right-3 top-3.5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
@@ -157,4 +205,4 @@ export function SignUp() {
       </div>
     </div>
   );
-} 
+}

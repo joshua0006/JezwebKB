@@ -35,7 +35,10 @@ export function Navbar() {
 
           <div className="flex items-center space-x-4">
             {user ? (
-              <UserMenu />
+              <>
+                <Link to="/dashboard" className="text-white bg-indigo-600 px-4 py-2 rounded-md font-semibold hover:bg-indigo-700">Dashboard</Link>
+                <UserMenu />
+              </>
             ) : (
               <Link
                 to="/signin"
