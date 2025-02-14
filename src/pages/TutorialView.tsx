@@ -88,15 +88,16 @@ export function TutorialView() {
   };
 
   const handleAddComment = async () => {
-    if (!user || !newComment.trim()) return;
+    if (!user || !tutorialId || !newComment.trim()) return;
 
     setIsSubmitting(true);
     try {
       await commentService.addComment(
-        tutorialId!, 
-        user.uid, 
-        userProfile?.username || 'Anonymous', 
-        newComment.trim()
+        tutorialId,
+        user.uid,
+        userProfile?.username || 'Anonymous',
+        newComment,
+        userProfile?.photoURL || null
       );
       setNewComment('');
     } catch (error) {

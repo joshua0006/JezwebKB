@@ -27,7 +27,7 @@ export function Comment({ comment, currentUserId, onEdit, onDelete, isDeleting }
           <img
             src={comment.photoURL}
             alt={comment.userName}
-            className="h-10 w-10 rounded-full"
+            className="h-10 w-10 rounded-full object-cover"
           />
         ) : (
           <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">

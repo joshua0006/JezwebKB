@@ -20,13 +20,14 @@ export const commentService = {
     });
   },
 
-  async addComment(tutorialId: string, userId: string, userName: string, content: string) {
+  async addComment(tutorialId: string, userId: string, userName: string, content: string, photoURL: string | null) {
     const commentsRef = collection(db, 'comments');
     await addDoc(commentsRef, {
       tutorialId,
       userId,
       userName,
       content,
+      photoURL,
       createdAt: serverTimestamp()
     });
   },

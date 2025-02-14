@@ -48,7 +48,7 @@ export function AppRoutes() {
         />
 
         <Route
-          path="/profile"
+          path="/profile-settings"
           element={
             <RequireAuth>
               <Profile />
