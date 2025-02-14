@@ -5,13 +5,12 @@ import { getStorage } from 'firebase/storage';
 import { getAnalytics } from 'firebase/analytics';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBNZClqxXyCxLT6CU-xJeY9RdCqnElaMPE",
-  authDomain: "jezwebkb.firebaseapp.com",
-  projectId: "jezwebkb",
-  storageBucket: "jezwebkb.firebasestorage.app",
-  messagingSenderId: "724024499804",
-  appId: "1:724024499804:web:b2fcbe56c5896867879099",
-  measurementId: "G-1Y53V5J3YH"
+  apiKey: "AIzaSyDJRFjNFtjdH8NuucKeNSpzfF5b40DQRFQ",
+  authDomain: "jezweb-kb.firebaseapp.com",
+  projectId: "jezweb-kb",
+  storageBucket: "jezweb-kb.firebasestorage.app",
+  messagingSenderId: "851109416291",
+  appId: "1:851109416291:web:462ad083f4fa5b74f55756"
 };
 
 // Initialize Firebase

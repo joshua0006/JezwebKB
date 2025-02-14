@@ -5,11 +5,16 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
-  onAuthStateChanged
+  onAuthStateChanged,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult
 } from 'firebase/auth';
 import { auth } from '../config/firebase';
 import { userService } from '../services/userService';
 import { UserProfile } from '../types/user';
+import { useNavigate } from 'react-router-dom';
 
 interface AuthContextType {
   user: FirebaseUser | null;
@@ -19,14 +24,18 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (profile: Partial<UserProfile>) => void;
+  signInWithGoogle: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+const googleProvider = new GoogleAuthProvider();
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   // Load user profile when Firebase user changes
   useEffect(() => {
@@ -111,7 +120,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const updateProfile = (profile: Partial<UserProfile>) => {
     if (userProfile) {
-      setUserProfile({ ...userProfile, ...profile });
+      const updatedProfile = { ...userProfile, ...profile };
+      setUserProfile(updatedProfile);
+      // Optional: Update Firestore if needed
+      userService.updateUserProfile(userProfile.uid, updatedProfile);
+    }
+  };
+
+  const signInWithGoogle = async () => {
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+      
+      // Check if user is new
+      if (result._tokenResponse?.isNewUser) {
+        await userService.createUserProfile(
+          user.uid,
+          user.email || '',
+          user.displayName || 'Google User',
+          user.photoURL
+        );
+      }
+      
+      // Load profile
+      const profile = await userService.getUserProfile(user.uid);
+      setUserProfile(profile);
+      
+      // Redirect using stored path
+      const fromPath = sessionStorage.getItem('fromPath') || '/';
+      sessionStorage.removeItem('fromPath');
+      navigate(fromPath, { replace: true });
+      
+    } catch (error) {
+      console.error('Google sign-in error:', error);
+      throw error;
     }
   };
 
@@ -122,7 +164,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signUp,
     signIn,
     logout,
-    updateProfile
+    updateProfile,
+    signInWithGoogle
   };
 
   return (

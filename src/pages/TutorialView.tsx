@@ -19,11 +19,16 @@ import { commentService } from '../services/commentService';
 import { Spinner } from '../components/Spinner';
 import { ConfirmationModal } from '../components/ConfirmationModal';
 import { Comment } from '../components/Comment';
+import { useGoogleRealtimeLoader } from '@google/generative-ai/react';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+
+// Initialize Gemini
+const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
 
 export function TutorialView() {
   const { tutorialId } = useParams();
   const navigate = useNavigate();
-  const { user, userProfile } = useAuth();
+  const { user, userProfile, updateProfile } = useAuth();
   const [isRead, setIsRead] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -35,12 +40,17 @@ export function TutorialView() {
   const [isDeletingComment, setIsDeletingComment] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [commentToDelete, setCommentToDelete] = useState<string | null>(null);
+  const [videoSummary, setVideoSummary] = useState('');
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const tutorial = tutorialId ? getTutorialById(tutorialId) : null;
 
   useEffect(() => {
     const loadProgress = async () => {
-      if (tutorialId) {
-        const progress = await tutorialService.getTutorialProgress(userProfile, tutorialId);
+      if (tutorialId && user) {
+        const progress = await tutorialService.getTutorialProgress(
+          user.uid,
+          tutorialId
+        );
         setIsRead(progress.isRead);
         setIsFavorite(progress.isFavorite);
         setLoading(false);
@@ -63,16 +73,46 @@ export function TutorialView() {
         unsubscribe();
       }
     };
-  }, [tutorialId, userProfile]);
+  }, [tutorialId, user]);
 
-  const handleMarkAsRead = async () => {
+  useEffect(() => {
+    const generateSummary = async () => {
+      if (!tutorial?.videoUrl) return;
+      
+      try {
+        setIsGeneratingSummary(true);
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const prompt = `Summarize this video tutorial in 3-5 bullet points: ${tutorial.videoUrl}`;
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        setVideoSummary(response.text());
+      } catch (error) {
+        console.error('Error generating summary:', error);
+        setVideoSummary('Summary unavailable');
+      } finally {
+        setIsGeneratingSummary(false);
+      }
+    };
+
+    generateSummary();
+  }, [tutorial?.videoUrl]);
+
+  const handleToggleRead = async () => {
     if (!user || !tutorialId) return;
 
     try {
-      await tutorialService.markTutorialAsRead(user.uid, tutorialId);
-      setIsRead(true);
+      if (isRead) {
+        await tutorialService.unmarkTutorialAsRead(user.uid, tutorialId);
+        const updatedRead = userProfile?.readTutorials.filter(id => id !== tutorialId) || [];
+        updateProfile({ readTutorials: updatedRead });
+      } else {
+        await tutorialService.markTutorialAsRead(user.uid, tutorialId);
+        const updatedRead = [...(userProfile?.readTutorials || []), tutorialId];
+        updateProfile({ readTutorials: updatedRead });
+      }
+      setIsRead(!isRead);
     } catch (error) {
-      console.error('Error marking tutorial as read:', error);
+      console.error('Error toggling read status:', error);
     }
   };
 
@@ -81,6 +121,10 @@ export function TutorialView() {
 
     try {
       await tutorialService.toggleFavorite(user.uid, tutorialId, !isFavorite);
+      const newFavorites = isFavorite 
+        ? userProfile?.favorites.filter(id => id !== tutorialId) || []
+        : [...(userProfile?.favorites || []), tutorialId];
+      updateProfile({ favorites: newFavorites });
       setIsFavorite(!isFavorite);
     } catch (error) {
       console.error('Error toggling favorite:', error);
@@ -170,75 +214,41 @@ export function TutorialView() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <Breadcrumbs items={breadcrumbItems} className="mb-8" />
-        
-        {/* Hero Section */}
-        <header className="relative mb-8 rounded-2xl overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-r from-slate-900/50 to-slate-800/10" />
-          <img 
-            src={tutorial.image} 
-            alt={tutorial.title}
-            className="w-full h-64 object-cover"
-          />
-          <div className="absolute inset-0 flex flex-col justify-end p-8 text-white">
-            <h1 className="text-4xl font-bold mb-4 drop-shadow-md">
-              {tutorial.title}
-            </h1>
-            <div className="flex flex-wrap gap-4 items-center text-sm">
-              <div className="flex items-center bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full">
-                <Clock className="h-4 w-4 mr-2" />
-                <span>10 min read</span>
+        {/* Breadcrumbs */}
+        <Breadcrumbs items={breadcrumbItems} />
+
+        {/* Video Section */}
+        {tutorial?.videoUrl ? (
+          <div className="mb-8">
+            <div className="aspect-video rounded-xl overflow-hidden shadow-lg">
+              <iframe
+                src={tutorial.videoUrl.replace('watch?v=', 'embed/')}
+                className="w-full h-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+            
+            <div className="mt-4 p-4 bg-indigo-50 rounded-lg">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-lg font-semibold text-indigo-800">Video Summary</h3>
+                {isGeneratingSummary && <Spinner className="w-5 h-5 text-indigo-600" />}
               </div>
-              <div className="flex items-center bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full">
-                <Tag className="h-4 w-4 mr-2" />
-                <span>{tutorial.category}</span>
-              </div>
-              {tutorial.tags.map(tag => (
-                <span 
-                  key={tag}
-                  className="bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-full"
-                >
-                  #{tag}
-                </span>
-              ))}
+              {videoSummary && (
+                <div 
+                  className="prose prose-indigo"
+                  dangerouslySetInnerHTML={{ __html: videoSummary.replace(/\n/g, '<br/>') }}
+                />
+              )}
             </div>
           </div>
-        </header>
-
-        {/* Tutorial Progress Controls */}
-        {user && !loading && (
-          <div className="flex justify-end space-x-4 mb-6">
-            <button
-              onClick={handleMarkAsRead}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-md ${
-                isRead 
-                  ? 'text-green-700 bg-green-50 hover:bg-green-100' 
-                  : 'text-gray-700 bg-gray-50 hover:bg-gray-100'
-              }`}
-            >
-              {isRead ? (
-                <CheckCircle2 className="h-5 w-5" />
-              ) : (
-                <CheckCircle className="h-5 w-5" />
-              )}
-              <span>{isRead ? 'Completed' : 'Mark as Complete'}</span>
-            </button>
-
-            <button
-              onClick={handleToggleFavorite}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-md ${
-                isFavorite 
-                  ? 'text-yellow-700 bg-yellow-50 hover:bg-yellow-100' 
-                  : 'text-gray-700 bg-gray-50 hover:bg-gray-100'
-              }`}
-            >
-              {isFavorite ? (
-                <BookmarkCheck className="h-5 w-5" />
-              ) : (
-                <Bookmark className="h-5 w-5" />
-              )}
-              <span>{isFavorite ? 'Favorited' : 'Add to Favorites'}</span>
-            </button>
+        ) : (
+          <div className="mb-8">
+            <img
+              src={tutorial?.image}
+              alt={tutorial?.title}
+              className="w-full h-auto rounded-xl shadow-lg"
+            />
           </div>
         )}
 
@@ -267,6 +277,33 @@ export function TutorialView() {
             ))}
           </div>
         </article>
+
+        {/* Progress and Favorites Actions */}
+        <div className="flex gap-4 mb-8">
+          <button
+            onClick={handleToggleRead}
+            className={`flex items-center gap-2 px-6 py-3 rounded-lg transition-colors ${
+              isRead 
+                ? 'bg-green-600 text-white hover:bg-green-700'
+                : 'bg-green-100 text-green-800 hover:bg-green-200'
+            }`}
+          >
+            <CheckCircle2 className="h-5 w-5" />
+            {isRead ? 'Completed (Click to undo)' : 'Mark as Complete'}
+          </button>
+
+          <button
+            onClick={handleToggleFavorite}
+            className={`flex items-center gap-2 px-6 py-3 rounded-lg transition-colors ${
+              isFavorite
+                ? 'bg-yellow-600 text-white'
+                : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
+            }`}
+          >
+            <Bookmark className="h-5 w-5" />
+            {isFavorite ? 'Favorited' : 'Add to Favorites'}
+          </button>
+        </div>
 
         {/* Comments Section */}
         <div className="bg-white rounded-2xl shadow-sm p-8 mb-8">

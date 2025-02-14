@@ -19,12 +19,20 @@ export const tutorialService = {
     });
   },
 
-  async getTutorialProgress(userProfile: UserProfile | null, tutorialId: string) {
-    if (!userProfile) return { isRead: false, isFavorite: false };
+  async getTutorialProgress(userId: string, tutorialId: string) {
+    if (typeof userId !== 'string') {
+      throw new Error('Invalid user ID');
+    }
     
+    const userRef = doc(db, 'users', userId);
+    const userSnap = await getDoc(userRef);
+    
+    if (!userSnap.exists()) return { isRead: false, isFavorite: false };
+    
+    const data = userSnap.data() as UserProfile;
     return {
-      isRead: userProfile.readTutorials.includes(tutorialId),
-      isFavorite: userProfile.favorites.includes(tutorialId)
+      isRead: data.readTutorials.includes(tutorialId),
+      isFavorite: data.favorites.includes(tutorialId)
     };
   },
 
