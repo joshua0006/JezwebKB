@@ -43,5 +43,13 @@ export const tutorialService = {
       return { id: docSnap.id, ...docSnap.data() };
     }
     return null;
+  },
+
+  async unmarkTutorialAsRead(userId: string, tutorialId: string): Promise<void> {
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, {
+      readTutorials: arrayRemove(tutorialId),
+      updatedAt: new Date().toISOString()
+    });
   }
 }; 
