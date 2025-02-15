@@ -4,14 +4,20 @@ import { UserProfile, ProfileUpdateData } from '../types/user';
 import { FirebaseError } from 'firebase/app';
 
 export const userService = {
-  async createUserProfile(uid: string, email: string, username: string, photoURL: string | null): Promise<void> {
+  async createUserProfile(
+    uid: string, 
+    email: string, 
+    username: string, 
+    photoURL: string | null,
+    role: 'user' | 'admin' = 'user'
+  ): Promise<void> {
     try {
       const userProfile: UserProfile = {
         uid,
         email,
         username,
         photoURL,
-        role: 'user',
+        role: email.endsWith('@jezweb.net') ? 'admin' : role,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         readTutorials: [],

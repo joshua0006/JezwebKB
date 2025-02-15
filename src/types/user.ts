@@ -8,6 +8,13 @@ export interface UserProfile {
   updatedAt: string;
   readTutorials: string[]; // Array of tutorial IDs that the user has read
   favorites: string[]; // Array of tutorial IDs that the user has favorited
+  progress: {
+    [tutorialId: string]: {
+      completed: boolean;
+      lastAccessed: string;
+      progressPercentage: number;
+    }
+  };
 }
 
 export interface AuthUser extends UserProfile {

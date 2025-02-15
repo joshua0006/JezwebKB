@@ -15,6 +15,8 @@ import { auth } from '../config/firebase';
 import { userService } from '../services/userService';
 import { UserProfile } from '../types/user';
 import { useNavigate } from 'react-router-dom';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { db } from '../config/firebase';
 
 interface AuthContextType {
   user: FirebaseUser | null;
@@ -39,21 +41,68 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Load user profile when Firebase user changes
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      setUser(firebaseUser);
-      
-      if (firebaseUser) {
-        const profile = await userService.getUserProfile(firebaseUser.uid);
-        setUserProfile(profile);
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      setUser(user); // Always update user state
+      if (user) {
+        console.log('Auth state changed - user logged in:', user.uid);
+        try {
+          await fetchUserProfile(user);
+        } catch (error) {
+          console.error('Failed to load profile:', error);
+          await auth.signOut();
+        }
       } else {
+        console.log('User logged out');
         setUserProfile(null);
       }
-      
-      setLoading(false);
+      setLoading(false); // Ensure loading is always false after auth check
     });
-
     return unsubscribe;
   }, []);
+
+  const fetchUserProfile = async (user: FirebaseUser) => {
+    try {
+      const docRef = doc(db, 'users', user.uid);
+      const docSnap = await getDoc(docRef);
+      
+      if (docSnap.exists()) {
+        let userData = docSnap.data() as UserProfile;
+        
+        // Immediate role update check
+        const isJezwebAdmin = user.email?.endsWith('@jezweb.net');
+        if (isJezwebAdmin && userData.role !== 'admin') {
+          await updateDoc(docRef, { role: 'admin' });
+          userData = { ...userData, role: 'admin' };
+        }
+        
+        setUserProfile(userData);
+        // Redirect immediately after profile update
+        if (userData.role === 'admin' || isJezwebAdmin) {
+          navigate('/admin');
+        }
+      } else {
+        const role = user.email?.endsWith('@jezweb.net') ? 'admin' : 'user';
+        await userService.createUserProfile(
+          user.uid,
+          user.email || '',
+          user.displayName || 'New User',
+          user.photoURL,
+          role
+        );
+        
+        const newDoc = await getDoc(docRef);
+        const newUserData = newDoc.data() as UserProfile;
+        setUserProfile(newUserData);
+        
+        if (newUserData.role === 'admin') {
+          navigate('/admin');
+        }
+      }
+    } catch (error) {
+      console.error('Error loading user profile:', error);
+      throw new Error('Failed to load user profile');
+    }
+  };
 
   const signUp = async (email: string, password: string, username: string) => {
     try {
@@ -101,11 +150,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signIn = async (email: string, password: string) => {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      // Load user profile
-      const profile = await userService.getUserProfile(userCredential.user.uid);
-      setUserProfile(profile);
+      await fetchUserProfile(userCredential.user);
     } catch (error) {
-      throw error;
+      let message = 'Login failed';
+      if (error instanceof FirebaseError) {
+        switch (error.code) {
+          case 'auth/user-not-found':
+          case 'auth/wrong-password':
+            message = 'Invalid email or password';
+            break;
+          case 'auth/too-many-requests':
+            message = 'Account temporarily locked. Try again later';
+            break;
+        }
+      }
+      throw new Error(message);
     }
   };
 
@@ -129,31 +188,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithGoogle = async () => {
     try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const user = result.user;
-      
-      // Check if user is new
-      if (result._tokenResponse?.isNewUser) {
-        await userService.createUserProfile(
-          user.uid,
-          user.email || '',
-          user.displayName || 'Google User',
-          user.photoURL
-        );
+      await signInWithPopup(auth, googleProvider);
+      const user = auth.currentUser;
+      if (user) {
+        await fetchUserProfile(user);
       }
-      
-      // Load profile
-      const profile = await userService.getUserProfile(user.uid);
-      setUserProfile(profile);
-      
-      // Redirect using stored path
-      const fromPath = sessionStorage.getItem('fromPath') || '/';
-      sessionStorage.removeItem('fromPath');
-      navigate(fromPath, { replace: true });
-      
     } catch (error) {
       console.error('Google sign-in error:', error);
-      throw error;
+      throw new Error('Google authentication failed. Please try again.');
     }
   };
 
@@ -168,9 +210,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signInWithGoogle
   };
 
+  useEffect(() => {
+    console.log('Auth Context Update:', {
+      user: user?.uid,
+      userProfile,
+      loading
+    });
+  }, [user, userProfile, loading]);
+
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 }
