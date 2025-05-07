@@ -155,6 +155,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       await fetchUserProfile(userCredential.user);
+      // Navigate to index page for all users
+      navigate('/', { replace: true });
     } catch (error) {
       let message = 'Login failed';
       if (error instanceof FirebaseError) {
@@ -196,15 +198,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const user = result.user;
       
       if (user) {
-        // Get stored path or default to dashboard
-        const redirectPath = sessionStorage.getItem('fromPath') || '/dashboard';
-        
         await fetchUserProfile(user);
         
-        // Redirect non-jezweb users to dashboard, but let jezweb.net users stay on current page
-        if (!user.email?.endsWith('@jezweb.net')) {
-          navigate('/dashboard', { replace: true });
-        }
+        // Redirect all users to index page
+        navigate('/', { replace: true });
         
         // Clear stored path
         sessionStorage.removeItem('fromPath');

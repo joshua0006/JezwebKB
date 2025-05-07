@@ -21,17 +21,17 @@ export function SignIn() {
     
     try {
       await signIn(email, password);
-      navigate(from, { replace: true });
+      // The navigation is now handled in the AuthContext
     } catch (err) {
       setError('Failed to sign in. Please check your credentials.');
     }
   };
 
   const handleGoogleSignIn = async () => {
-    sessionStorage.setItem('fromPath', from);
     setIsGoogleLoading(true);
     try {
       await signInWithGoogle();
+      // The navigation is now handled in the AuthContext
     } catch (error) {
       setError('Failed to sign in with Google');
     } finally {
