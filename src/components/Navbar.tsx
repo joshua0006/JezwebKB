@@ -1,16 +1,19 @@
 import React from 'react';
-import { BookOpen } from 'lucide-react';
+import { BookOpen, ShieldCheck } from 'lucide-react';
 import { UserMenu } from './UserMenu';
 import { Link, useLocation } from 'react-router-dom';
 import Search from './Search';
 import { useAuth } from '../context/AuthContext';
 
 export function Navbar() {
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
   const location = useLocation();
 
   // Check if the current path is the SignIn or SignUp page
   const isAuthPage = ['/signin', '/signup'].includes(location.pathname);
+  
+  // Check if user is an admin
+  const isAdmin = userProfile?.role === 'admin';
 
   if (isAuthPage) {
     return null; // Do not render the Navbar on auth pages
@@ -37,6 +40,15 @@ export function Navbar() {
             {user ? (
               <>
                 <Link to="/dashboard" className="text-white bg-indigo-600 px-4 py-2 rounded-md font-semibold hover:bg-indigo-700">Dashboard</Link>
+                {isAdmin && (
+                  <Link 
+                    to="/admin" 
+                    className="flex items-center gap-2 px-4 py-2 text-white bg-indigo-700 rounded-md font-semibold hover:bg-indigo-800"
+                  >
+                    <ShieldCheck className="w-4 h-4" />
+                    Admin
+                  </Link>
+                )}
                 <UserMenu />
               </>
             ) : (

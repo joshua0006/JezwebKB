@@ -20,8 +20,8 @@ export function RequireAuth({ children, role }: RequireAuthProps) {
     return <Navigate to="/" state={{ from: location }} replace />;
   }
 
-  // Check both userProfile role and email domain
-  const isAdmin = userProfile?.role === 'admin' || user?.email?.endsWith('@jezweb.net');
+  // For admin role, strictly check email domain - only jezweb.net emails can access admin pages
+  const isAdmin = user.email?.endsWith('@jezweb.net') === true;
   
   if (role === 'admin' && !isAdmin) {
     return <Navigate to="/dashboard" replace />;

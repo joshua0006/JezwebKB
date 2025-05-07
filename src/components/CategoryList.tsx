@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Layout, Box, FileText, ShoppingBag, ArrowRight } from 'lucide-react';
-import { Category } from '../types';
-import { getTutorialsByCategory } from '../data/tutorials';
+import { Category, Tutorial } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '../config/firebase';
 
 interface CategoryItem {
   id: Category;
@@ -22,19 +23,68 @@ interface CategoryListProps {
   onSelectCategory: (category: Category) => void;
 }
 
+interface FirebaseArticle {
+  id: string;
+  title: string;
+  category: Category;
+  vipOnly?: boolean;
+  vipUsers?: string[];
+  published?: boolean;
+}
+
 export function CategoryList({ onSelectCategory }: CategoryListProps) {
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
+  const [articleCounts, setArticleCounts] = useState<Record<string, number>>({});
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    const fetchArticleCounts = async () => {
+      setLoading(true);
+      const counts: Record<string, number> = {};
+      
+      try {
+        for (const category of categories) {
+          const articlesRef = collection(db, 'articles');
+          const q = query(
+            articlesRef, 
+            where('category', '==', category.id),
+            where('published', '==', true)
+          );
+          const querySnapshot = await getDocs(q);
+          
+          const articles = querySnapshot.docs.map(doc => ({ 
+            id: doc.id, 
+            ...doc.data() 
+          })) as FirebaseArticle[];
+          
+          const accessibleArticles = articles.filter(article => 
+            !article.vipOnly || 
+            userProfile?.role === 'admin' || 
+            (userProfile?.role === 'vip' && article.vipUsers?.includes(userProfile?.uid || ''))
+          );
+          
+          counts[category.id] = accessibleArticles.length;
+        }
+        
+        setArticleCounts(counts);
+      } catch (error) {
+        console.error("Error fetching article counts:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchArticleCounts();
+  }, [userProfile]);
+
+  // Skeleton for the count while loading
+  const CountSkeleton = () => (
+    <div className="h-4 w-16 bg-gray-200 animate-pulse rounded-md"></div>
+  );
 
   return (
     <div className="space-y-4 grid items-end grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 my-5">
       {categories.map(category => {
-        const tutorials = getTutorialsByCategory(category.id);
-        const accessibleTutorials = tutorials.filter(tutorial => 
-          !tutorial.vipOnly || 
-          user?.role === 'admin' || 
-          (user?.role === 'vip' && tutorial.vipUsers?.includes(user.id))
-        );
-
         return (
           <Link
             key={category.id}
@@ -49,7 +99,13 @@ export function CategoryList({ onSelectCategory }: CategoryListProps) {
                 </div>
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">{category.name}</h3>
-                  <p className="text-sm text-gray-500">{accessibleTutorials.length} tutorials</p>
+                  <p className="text-sm text-gray-500">
+                    {loading ? (
+                      <CountSkeleton />
+                    ) : (
+                      `${articleCounts[category.id] || 0} tutorials`
+                    )}
+                  </p>
                 </div>
               </div>
             </div>

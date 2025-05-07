@@ -3,9 +3,42 @@ import { useAuth } from '../context/AuthContext';
 import { User, LogOut, Settings, ChevronDown, ChevronUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+// Helper function to get initials from name
+const getInitials = (name: string | null | undefined) => {
+  if (!name) return '';
+  return name
+    .split(' ')
+    .map(part => part[0])
+    .join('')
+    .toUpperCase()
+    .substring(0, 2);
+};
+
+// Helper to get a deterministic color based on the user's name
+const getAvatarColor = (name: string | null | undefined) => {
+  if (!name) return 'bg-gray-200';
+  
+  const colors = [
+    'bg-red-200 text-red-700',
+    'bg-blue-200 text-blue-700',
+    'bg-green-200 text-green-700',
+    'bg-yellow-200 text-yellow-700',
+    'bg-purple-200 text-purple-700',
+    'bg-pink-200 text-pink-700',
+    'bg-indigo-200 text-indigo-700',
+    'bg-teal-200 text-teal-700'
+  ];
+  
+  // Simple hash to determine color
+  const hash = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  return colors[hash % colors.length];
+};
+
 export function UserMenu() {
-  const { user, userProfile, logout } = useAuth();
+  const { user, userProfile, logout, updateProfile } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
+  const [useCustomAvatar, setUseCustomAvatar] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const toggleMenu = () => {
@@ -25,6 +58,40 @@ export function UserMenu() {
     };
   }, []);
 
+  // Reset image error state when user or profile changes
+  useEffect(() => {
+    setImageError(false);
+  }, [user, userProfile]);
+
+  // Check if user's photo is from Google (contains googleusercontent.com)
+  const isGooglePhoto = userProfile?.photoURL?.includes('googleusercontent.com') || false;
+
+  // Load user preference for custom avatar from localStorage
+  useEffect(() => {
+    const savedPreference = localStorage.getItem('useCustomAvatar');
+    if (savedPreference) {
+      setUseCustomAvatar(savedPreference === 'true');
+    }
+  }, []);
+
+  // Toggle between Google photo and custom avatar
+  const toggleAvatar = () => {
+    const newValue = !useCustomAvatar;
+    setUseCustomAvatar(newValue);
+    localStorage.setItem('useCustomAvatar', String(newValue));
+  };
+
+  const handleImageError = () => {
+    console.error('Error loading profile image:', userProfile?.photoURL);
+    setImageError(true);
+  };
+
+  const initials = getInitials(userProfile?.username || user?.displayName);
+  const avatarColor = getAvatarColor(userProfile?.username || user?.displayName);
+
+  // Determine if we should show the profile photo based on all conditions
+  const showProfilePhoto = userProfile?.photoURL && !useCustomAvatar && !imageError;
+
   return (
     <div className="relative inline-block text-left" ref={menuRef}>
       <div>
@@ -33,15 +100,21 @@ export function UserMenu() {
           className="flex items-center space-x-2 text-gray-700 hover:text-gray-900"
           onClick={toggleMenu}
         >
-          {userProfile?.photoURL ? (
+          {showProfilePhoto ? (
             <img
-              src={userProfile.photoURL}
+              src={userProfile?.photoURL || ''}
               alt="Profile"
               className="h-8 w-8 rounded-full object-cover"
+              onError={handleImageError}
+              crossOrigin="anonymous"
             />
           ) : (
-            <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
-              <User className="h-5 w-5 text-gray-600" />
+            <div className={`h-8 w-8 rounded-full ${initials ? avatarColor : 'bg-gray-200'} flex items-center justify-center`}>
+              {initials ? (
+                <span className="text-sm font-medium">{initials}</span>
+              ) : (
+                <User className="h-5 w-5 text-gray-600" />
+              )}
             </div>
           )}
           <span className="text-sm font-medium">{userProfile?.username || 'Profile'}</span>
@@ -63,6 +136,17 @@ export function UserMenu() {
               <Settings className="h-4 w-4 inline-block mr-2" />
               Profile Settings
             </Link>
+            
+            {isGooglePhoto && !imageError && (
+              <button
+                onClick={toggleAvatar}
+                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+              >
+                <User className="h-4 w-4 inline-block mr-2" />
+                {useCustomAvatar ? "Use Google Photo" : "Use Initials Avatar"}
+              </button>
+            )}
+            
             <button
               onClick={logout}
               className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"

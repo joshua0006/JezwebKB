@@ -4,7 +4,7 @@ import { db } from '../config/firebase';
 import { UserProfile } from '../types/user';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
-import { Users, Bell, BookOpen } from 'lucide-react';
+import { Users, Bell, BookOpen, FileText } from 'lucide-react';
 import { NotificationManager } from './NotificationManager';
 import { Spinner } from './Spinner';
 
@@ -13,6 +13,7 @@ export function AdminDashboard() {
   const [stats, setStats] = useState({
     totalUsers: 0,
     activeTutorials: 0,
+    totalArticles: 0,
     loading: true
   });
 
@@ -31,9 +32,14 @@ export function AdminDashboard() {
         );
         const tutorialsSnapshot = await getDocs(tutorialsQuery);
 
+        // Get articles count
+        const articlesQuery = query(collection(db, 'articles'));
+        const articlesSnapshot = await getDocs(articlesQuery);
+
         setStats({
           totalUsers: usersSnapshot.size,
           activeTutorials: tutorialsSnapshot.size,
+          totalArticles: articlesSnapshot.size,
           loading: false
         });
       } catch (error) {
@@ -81,6 +87,13 @@ export function AdminDashboard() {
                 <Bell className="w-5 h-5" />
                 Send Notifications
               </Link>
+              <Link 
+                to="/admin/articles"
+                className="flex items-center gap-2 text-indigo-600 hover:bg-indigo-50 px-3 py-2 rounded-lg"
+              >
+                <FileText className="w-5 h-5" />
+                Manage Articles
+              </Link>
             </div>
           </div>
 
@@ -100,6 +113,13 @@ export function AdminDashboard() {
                   Active Tutorials
                 </span>
                 <span className="font-semibold">{stats.activeTutorials}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="flex items-center gap-2">
+                  <FileText className="w-4 h-4" />
+                  Total Articles
+                </span>
+                <span className="font-semibold">{stats.totalArticles}</span>
               </div>
             </div>
           </div>

@@ -1,9 +1,24 @@
-interface Tutorial {
+import { Category } from './index';
+
+export interface TutorialBlock {
+  id: string;
+  type: 'heading' | 'text' | 'code' | 'image' | 'video';
+  content: string;
+  order: number;
+}
+
+export interface Tutorial {
   id: string;
   title: string;
   description: string;
-  image: string;
+  priority?: number;
+  category: Category;
+  tags: string[];
+  image?: string;
+  videoUrl?: string;
+  blocks: TutorialBlock[];
+  createdAt: string;
   updatedAt: string;
-  categoryId: string;
-  // ... other existing fields
+  author: string;
+  status: 'published' | 'draft';
 } 

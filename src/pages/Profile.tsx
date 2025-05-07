@@ -43,38 +43,72 @@ export function Profile() {
 
     try {
       let photoURL = userProfile?.photoURL;
+      let photoUpdated = false;
 
       // Handle photo upload/deletion
       if (photoFile) {
-        // Delete old photo if exists
-        if (photoURL) {
-          const oldPhotoRef = ref(storage, `profilePhotos/${user.uid}`);
-          try {
-            await deleteObject(oldPhotoRef);
-          } catch (error) {
-            console.error('Error deleting old photo:', error);
-          }
-        }
-
+        // Generate a unique file path that includes timestamp to avoid conflicts
+        const timestamp = new Date().getTime();
+        const photoPath = `profilePhotos/${user.uid}_${timestamp}`;
+        const storageRef = ref(storage, photoPath);
+        
         // Upload new photo
-        const storageRef = ref(storage, `profilePhotos/${user.uid}`);
         await uploadBytes(storageRef, photoFile);
         photoURL = await getDownloadURL(storageRef);
+        photoUpdated = true;
+        
+        // Delete old photo if exists and isn't a Google photo
+        // Only attempt to delete if it's our own storage URL, not an external one like Google
+        if (userProfile?.photoURL && 
+            userProfile.photoURL.includes('firebasestorage') && 
+            !userProfile.photoURL.includes('googleusercontent')) {
+          try {
+            // Extract the path from the URL - we need to handle this carefully
+            // Firebase storage URLs contain a token, so we can't simply delete by URL
+            // We'll need to reconstruct the ref
+            
+            // This is a simplified approach - the robust approach would be to store
+            // the full path in Firestore when uploading
+            const oldPhotoRef = ref(storage, userProfile.photoURL);
+            await deleteObject(oldPhotoRef).catch(err => {
+              console.log("Failed to delete old photo, but continuing", err);
+              // Non-blocking, continue even if this fails
+            });
+          } catch (error) {
+            console.error('Error deleting old photo:', error);
+            // Non-blocking error - continue with profile update
+          }
+        }
       } else if (previewUrl === null && photoURL) {
-        // User wants to remove photo
-        const photoRef = ref(storage, `profilePhotos/${user.uid}`);
-        await deleteObject(photoRef);
+        // User wants to remove photo, but only if it's not a Google photo
+        if (photoURL.includes('firebasestorage') && 
+            !photoURL.includes('googleusercontent')) {
+          try {
+            // For Google photos, we just remove the reference, no need to delete the actual file
+            const photoRef = ref(storage, photoURL);
+            await deleteObject(photoRef).catch(err => {
+              console.log("Failed to delete photo, but continuing", err);
+            });
+          } catch (error) {
+            console.error('Error deleting photo, continuing anyway:', error);
+          }
+        }
+        
+        // Regardless of whether delete succeeds, remove the URL from the profile
         photoURL = null;
+        photoUpdated = true;
       }
 
       // Update profile in Firestore
-      await userService.updateUserProfile(user.uid, {
-        username: username.trim(),
-        photoURL
-      });
+      const updates: any = { username: username.trim() };
+      if (photoUpdated) {
+        updates.photoURL = photoURL;
+      }
+      
+      await userService.updateUserProfile(user.uid, updates);
 
       // Update local state
-      updateProfile({ username: username.trim(), photoURL });
+      updateProfile(updates);
       navigate('/dashboard');
     } catch (error) {
       console.error('Error updating profile:', error);
@@ -82,6 +116,11 @@ export function Profile() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  // Function to determine if the current photo is from Google
+  const isGooglePhoto = () => {
+    return userProfile?.photoURL?.includes('googleusercontent.com') || false;
   };
 
   return (
@@ -94,6 +133,14 @@ export function Profile() {
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
             <p className="text-red-700 text-center">{error}</p>
+          </div>
+        )}
+        
+        {isGooglePhoto() && previewUrl === userProfile?.photoURL && (
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+            <p className="text-blue-700 text-sm">
+              You're using your Google profile photo. You can upload a custom photo instead, or continue using your Google photo.
+            </p>
           </div>
         )}
 

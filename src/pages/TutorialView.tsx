@@ -11,7 +11,8 @@ import {
   Bookmark,
   BookmarkCheck,
   CheckCircle,
-  CheckCircle2
+  CheckCircle2,
+  Loader2
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { tutorialService } from '../services/tutorialService';
@@ -32,6 +33,8 @@ export function TutorialView() {
   const [isRead, setIsRead] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadingRead, setLoadingRead] = useState(false);
+  const [loadingFavorite, setLoadingFavorite] = useState(false);
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
@@ -100,6 +103,7 @@ export function TutorialView() {
   const handleToggleRead = async () => {
     if (!user || !tutorialId) return;
 
+    setLoadingRead(true);
     try {
       if (isRead) {
         await tutorialService.unmarkTutorialAsRead(user.uid, tutorialId);
@@ -113,12 +117,15 @@ export function TutorialView() {
       setIsRead(!isRead);
     } catch (error) {
       console.error('Error toggling read status:', error);
+    } finally {
+      setLoadingRead(false);
     }
   };
 
   const handleToggleFavorite = async () => {
     if (!user || !tutorialId) return;
 
+    setLoadingFavorite(true);
     try {
       await tutorialService.toggleFavorite(user.uid, tutorialId, !isFavorite);
       const newFavorites = isFavorite 
@@ -128,6 +135,8 @@ export function TutorialView() {
       setIsFavorite(!isFavorite);
     } catch (error) {
       console.error('Error toggling favorite:', error);
+    } finally {
+      setLoadingFavorite(false);
     }
   };
 
@@ -282,26 +291,40 @@ export function TutorialView() {
         <div className="flex gap-4 mb-8">
           <button
             onClick={handleToggleRead}
+            disabled={loadingRead}
             className={`flex items-center gap-2 px-6 py-3 rounded-lg transition-colors ${
               isRead 
                 ? 'bg-green-600 text-white hover:bg-green-700'
                 : 'bg-green-100 text-green-800 hover:bg-green-200'
-            }`}
+            } ${loadingRead ? 'opacity-70 cursor-not-allowed' : ''}`}
           >
-            <CheckCircle2 className="h-5 w-5" />
-            {isRead ? 'Completed (Click to undo)' : 'Mark as Complete'}
+            {loadingRead ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <CheckCircle2 className="h-5 w-5" />
+            )}
+            {loadingRead 
+              ? 'Processing...' 
+              : isRead ? 'Completed (Click to undo)' : 'Mark as Complete'}
           </button>
 
           <button
             onClick={handleToggleFavorite}
+            disabled={loadingFavorite}
             className={`flex items-center gap-2 px-6 py-3 rounded-lg transition-colors ${
               isFavorite
                 ? 'bg-yellow-600 text-white'
                 : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
-            }`}
+            } ${loadingFavorite ? 'opacity-70 cursor-not-allowed' : ''}`}
           >
-            <Bookmark className="h-5 w-5" />
-            {isFavorite ? 'Favorited' : 'Add to Favorites'}
+            {loadingFavorite ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <Bookmark className="h-5 w-5" />
+            )}
+            {loadingFavorite 
+              ? 'Processing...' 
+              : isFavorite ? 'Favorited' : 'Add to Favorites'}
           </button>
         </div>
 

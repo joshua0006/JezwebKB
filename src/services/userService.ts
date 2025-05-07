@@ -12,16 +12,21 @@ export const userService = {
     role: 'user' | 'admin' = 'user'
   ): Promise<void> {
     try {
+      // Email domain check for role - only jezweb.net domain can be admin
+      const isJezwebDomain = email.endsWith('@jezweb.net');
+      const finalRole = isJezwebDomain ? 'admin' : 'user';
+
       const userProfile: UserProfile = {
         uid,
         email,
         username,
         photoURL,
-        role: email.endsWith('@jezweb.net') ? 'admin' : role,
+        role: finalRole,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         readTutorials: [],
-        favorites: []
+        favorites: [],
+        progress: {}
       };
 
       await setDoc(doc(db, 'users', uid), userProfile);

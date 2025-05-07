@@ -35,11 +35,13 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-helmet-async": "^2.0.4",
+    "react-markdown": "^10.1.0",
+    "react-quill": "^2.0.0",
     "react-router-dom": "^6.22.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",
-    "@tailwindcss/typography": "^0.5.10",
+    "@tailwindcss/typography": "^0.5.16",
     "@types/cors": "^2.8.17",
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",

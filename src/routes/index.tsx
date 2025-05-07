@@ -6,6 +6,8 @@ import { Dashboard } from '../pages/Dashboard';
 import { Profile } from '../pages/Profile';
 import { TutorialView } from '../pages/TutorialView';
 import { CategoryView } from '../pages/CategoryView';
+import { ArticleView } from '../pages/ArticleView';
+import { ArticlesPage } from '../pages/ArticlesPage';
 import { AboutUs } from '../pages/AboutUs';
 import { PrivacyPolicy } from '../pages/PrivacyPolicy';
 import { TermsOfService } from '../pages/TermsOfService';
@@ -17,6 +19,9 @@ import { AdminDashboard } from '../components/AdminDashboard';
 import { UserManagement } from '../components/UserManagement';
 import { NotificationManager } from '../components/NotificationManager';
 import { AdminLayout } from '../components/AdminLayout';
+import { ArticleManager } from '../components/ArticleManager';
+import { ArticleForm } from '../components/ArticleForm';
+import { AdminTools } from '../pages/AdminTools';
 
 
 export function AppRoutes() {
@@ -31,6 +36,10 @@ export function AppRoutes() {
         <Route path="/signin" element={<SignIn />} />
         <Route path="/signup" element={<SignUp />} />
         <Route path="/video-summary" element={<YouTubeSummaryTool />} />
+
+        {/* Article routes */}
+        <Route path="/articles" element={<ArticlesPage />} />
+        <Route path="/article/:articleId" element={<ArticleView />} />
 
         {/* Tutorial routes */}
         <Route path="/tutorials">
@@ -74,6 +83,10 @@ export function AppRoutes() {
           <Route index element={<AdminDashboard />} />
           <Route path="users" element={<UserManagement />} />
           <Route path="notifications" element={<NotificationManager />} />
+          <Route path="articles" element={<ArticleManager />} />
+          <Route path="articles/new" element={<ArticleForm />} />
+          <Route path="articles/:id/edit" element={<ArticleForm />} />
+          <Route path="tools" element={<AdminTools />} />
         </Route>
 
         {/* 404 route */}

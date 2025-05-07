@@ -1,12 +1,9 @@
-import { useParams, useNavigate } from 'react-router-dom';
-import { Link } from 'react-router-dom';
-import { Layout, Box, FileText, ShoppingBag } from 'lucide-react';
-import { format } from 'date-fns';
-import { Breadcrumbs } from '../components/Breadcrumbs';
-import ScrollToTopLink from '../components/ScrollToTopLink';
-import { useEffect, useState } from 'react';
-import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
+import { useState, useEffect } from 'react';
+import { collection, query, where, getDocs, Timestamp, orderBy } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import { Link } from 'react-router-dom';
+import { Breadcrumbs } from '../components/Breadcrumbs';
+import { format } from 'date-fns';
 
 // Article type definition
 interface Article {
@@ -28,29 +25,25 @@ const isFirestoreTimestamp = (value: any): value is Timestamp => {
   return value && typeof value.toDate === 'function';
 };
 
-export function CategoryView() {
-  const { categoryId } = useParams<{ categoryId: string }>();
-  const navigate = useNavigate();
+export function ArticlesPage() {
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
-  
-  const categoryName = categoryId 
-    ? categoryId.charAt(0).toUpperCase() + categoryId.slice(1).replace('-', ' ')
-    : 'Unknown Category';
+  const [error, setError] = useState<string | null>(null);
 
   const breadcrumbItems = [
-    { label: 'Articles', path: '/articles' },
-    { label: categoryName }
+    { label: 'Articles' }
   ];
 
   useEffect(() => {
     const fetchArticles = async () => {
-      if (!categoryId) return;
-      
       setLoading(true);
       try {
         const articlesRef = collection(db, 'articles');
-        const articlesQuery = query(articlesRef, where('category', '==', categoryId), where('published', '==', true));
+        const articlesQuery = query(
+          articlesRef, 
+          where('published', '==', true),
+          orderBy('updatedAt', 'desc')
+        );
         const querySnapshot = await getDocs(articlesQuery);
         
         const articleData = querySnapshot.docs.map(doc => ({
@@ -59,51 +52,56 @@ export function CategoryView() {
         })) as Article[];
         
         setArticles(articleData);
-      } catch (error) {
-        console.error('Error fetching articles:', error);
+      } catch (err) {
+        console.error('Error fetching articles:', err);
+        setError('Failed to load articles');
       } finally {
         setLoading(false);
       }
     };
 
     fetchArticles();
-  }, [categoryId]);
+  }, []);
 
   if (loading) {
     return (
-      <div className="text-center py-16">
-        <h1 className="text-2xl font-bold text-gray-900 mb-4">Loading Articles...</h1>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <Breadcrumbs items={breadcrumbItems} />
+        <div className="text-center py-16">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Loading Articles...</h1>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <Breadcrumbs items={breadcrumbItems} />
+        <div className="text-center py-16">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">{error}</h1>
+        </div>
       </div>
     );
   }
 
   if (!articles.length) {
     return (
-      <div className="text-center py-16">
-        <h1 className="text-2xl font-bold text-gray-900 mb-4">No Articles Found</h1>
-        <button
-          onClick={() => navigate(-1)}
-          className="text-indigo-600 hover:text-indigo-800"
-        >
-          Go Back
-        </button>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <Breadcrumbs items={breadcrumbItems} />
+        <div className="text-center py-16">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">No Articles Found</h1>
+        </div>
       </div>
     );
   }
 
-  // Define icons for categories
-  const categoryIcons = {
-    wordpress: <Layout className="h-6 w-6 text-indigo-600" />,
-    elementor: <Box className="h-6 w-6 text-indigo-600" />,
-    'gravity-forms': <FileText className="h-6 w-6 text-indigo-600" />,
-    shopify: <ShoppingBag className="h-6 w-6 text-indigo-600" />,
-  };
-
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <Breadcrumbs items={breadcrumbItems} />
-
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">Articles in Category: {categoryName}</h1>
+      
+      <h1 className="text-3xl font-bold text-gray-900 mb-8">All Articles</h1>
+      
       <div className="grid items-center align-center grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
         {articles.map(article => (
           <div
@@ -121,11 +119,21 @@ export function CategoryView() {
 
             {/* Content Section */}
             <div className="p-6">
+              {/* Category */}
+              <div className="mb-2">
+                <Link
+                  to={`/categories/${article.category}`}
+                  className="text-xs font-medium uppercase text-indigo-600 hover:text-indigo-800"
+                >
+                  {article.category.charAt(0).toUpperCase() + article.category.slice(1).replace('-', ' ')}
+                </Link>
+              </div>
+
               {/* Title */}
               <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                <ScrollToTopLink to={`/article/${article.id}`} className="hover:text-blue-600">
+                <Link to={`/article/${article.id}`} className="hover:text-blue-600">
                   {article.title}
-                </ScrollToTopLink>
+                </Link>
               </h3>
 
               {/* Description */}
@@ -140,7 +148,7 @@ export function CategoryView() {
                     <>Updated {format(
                       isFirestoreTimestamp(article.updatedAt) 
                         ? article.updatedAt.toDate() 
-                        : new Date(article.updatedAt as string), 
+                        : new Date(article.updatedAt as unknown as string), 
                       'MMM d, yyyy'
                     )}</>
                   ) : (
@@ -158,10 +166,10 @@ export function CategoryView() {
           </div>
         ))}
       </div>
-
+      
       <div className="mt-8">
         <p className="text-sm text-gray-600">Total Articles Available: {articles.length}</p>
       </div>
     </div>
   );
-}
+} 

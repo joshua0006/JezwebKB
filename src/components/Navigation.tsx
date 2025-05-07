@@ -4,7 +4,10 @@ import { UserMenu } from './UserMenu';
 import { ShieldCheck } from 'lucide-react';
 
 export function Navigation() {
-  const { userProfile } = useAuth();
+  const { userProfile, user } = useAuth();
+  
+  // Only jezweb.net users can see and access admin dashboard
+  const isJezwebAdmin = user?.email?.endsWith('@jezweb.net');
 
   return (
     <nav className="bg-white shadow-sm">
@@ -16,7 +19,7 @@ export function Navigation() {
             </Link>
           </div>
           <div className="flex items-center gap-4">
-            {userProfile?.role === 'admin' && (
+            {isJezwebAdmin && (
               <Link 
                 to="/admin" 
                 className="flex items-center gap-2 px-4 py-2 text-indigo-600 hover:bg-indigo-50 rounded-lg"

@@ -68,19 +68,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (docSnap.exists()) {
         let userData = docSnap.data() as UserProfile;
         
-        // Immediate role update check
+        // Check email domain for role management
         const isJezwebAdmin = user.email?.endsWith('@jezweb.net');
+        
+        // If user is from jezweb.net and not admin, promote to admin
         if (isJezwebAdmin && userData.role !== 'admin') {
           await updateDoc(docRef, { role: 'admin' });
           userData = { ...userData, role: 'admin' };
         }
+        // If user is NOT from jezweb.net but has admin role, demote to user
+        else if (!isJezwebAdmin && userData.role === 'admin') {
+          await updateDoc(docRef, { role: 'user' });
+          userData = { ...userData, role: 'user' };
+        }
         
         setUserProfile(userData);
-        // Redirect immediately after profile update
-        if (userData.role === 'admin' || isJezwebAdmin) {
-          navigate('/admin');
-        }
+        
+        // Removed automatic redirect to admin page
       } else {
+        // For new users, set role based on email domain
         const role = user.email?.endsWith('@jezweb.net') ? 'admin' : 'user';
         await userService.createUserProfile(
           user.uid,
@@ -94,9 +100,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const newUserData = newDoc.data() as UserProfile;
         setUserProfile(newUserData);
         
-        if (newUserData.role === 'admin') {
-          navigate('/admin');
-        }
+        // Removed automatic redirect to admin page
       }
     } catch (error) {
       console.error('Error loading user profile:', error);
@@ -188,10 +192,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithGoogle = async () => {
     try {
-      await signInWithPopup(auth, googleProvider);
-      const user = auth.currentUser;
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+      
       if (user) {
+        // Get stored path or default to dashboard
+        const redirectPath = sessionStorage.getItem('fromPath') || '/dashboard';
+        
         await fetchUserProfile(user);
+        
+        // Redirect non-jezweb users to dashboard, but let jezweb.net users stay on current page
+        if (!user.email?.endsWith('@jezweb.net')) {
+          navigate('/dashboard', { replace: true });
+        }
+        
+        // Clear stored path
+        sessionStorage.removeItem('fromPath');
       }
     } catch (error) {
       console.error('Google sign-in error:', error);
