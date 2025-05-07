@@ -137,9 +137,12 @@ export function ArticlesPage() {
               </h3>
 
               {/* Description */}
-              <p className="text-gray-600 mb-4 line-clamp-2">
-                {article.description || article.content.substring(0, 100).replace(/<[^>]*>/g, '') + '...'}
-              </p>
+              <p 
+                className="text-gray-600 mb-4 line-clamp-2"
+                dangerouslySetInnerHTML={{
+                  __html: article.description || article.content.substring(0, 100).replace(/<[^>]*>/g, '') + '...'
+                }}
+              ></p>
 
               {/* Time and Read More Button */}
               <div className="flex items-center justify-between">
