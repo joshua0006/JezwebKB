@@ -12,7 +12,7 @@ interface FeaturedArticlesProps {
 }
 
 export function FeaturedArticles({ onSelectArticle, onViewAll }: FeaturedArticlesProps) {
-  const { userProfile } = useAuth();
+  const { user, userProfile } = useAuth();
   const [articles, setArticles] = useState<Article[]>([]);
   const [allArticles, setAllArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,35 +29,20 @@ export function FeaturedArticles({ onSelectArticle, onViewAll }: FeaturedArticle
       try {
         let articlesQuery;
         
-        // Base query conditions based on user role
-        if (!userProfile) {
-          // For non-authenticated users, only get non-VIP articles
-          articlesQuery = query(
-            collection(db, 'articles'),
-            where('published', '==', true),
-            where('vipOnly', '==', false),
-            orderBy('createdAt', 'desc')
-          );
-        } else if (userProfile.role === 'admin') {
-          // Admins can see all articles
-          articlesQuery = query(
-            collection(db, 'articles'),
-            where('published', '==', true),
-            orderBy('createdAt', 'desc')
-          );
-        } else if (userProfile.role === 'vip') {
-          // VIP users can see all public and VIP articles
+        // Using the available composite indexes from Firebase
+        if (userProfile?.role === 'admin') {
+          // Admins can see all articles - using index: published, createdAt
           articlesQuery = query(
             collection(db, 'articles'),
             where('published', '==', true),
             orderBy('createdAt', 'desc')
           );
         } else {
-          // Regular users can see only public articles
+          // For non-admin users - using index: published, vipOnly, createdAt
+          // If vipOnly field doesn't exist in some documents, this could cause issues
           articlesQuery = query(
             collection(db, 'articles'),
             where('published', '==', true),
-            where('vipOnly', '==', false),
             orderBy('createdAt', 'desc')
           );
         }
@@ -68,10 +53,29 @@ export function FeaturedArticles({ onSelectArticle, onViewAll }: FeaturedArticle
         }
 
         const querySnapshot = await getDocs(articlesQuery);
+        console.log('Articles query returned', querySnapshot.docs.length, 'documents');
         
         const fetchedArticles = querySnapshot.docs
           .map(doc => {
             const data = doc.data();
+            console.log('Article data:', { id: doc.id, ...data });
+            
+            // Skip VIP-only articles for regular users and non-authenticated users
+            if (data.vipOnly === true) {
+              if (!userProfile || userProfile.role === 'user') {
+                console.log('Skipping VIP article for regular user:', doc.id);
+                return null;
+              }
+              
+              // For VIP users, check if they have access to this specific article
+              if (userProfile.role === 'vip' && data.vipUsers) {
+                if (Array.isArray(data.vipUsers) && !data.vipUsers.includes(userProfile.uid)) {
+                  console.log('VIP user does not have access to this article:', doc.id);
+                  return null;
+                }
+              }
+            }
+            
             // Convert Firestore timestamp to string
             const createdAt = data.createdAt?.toDate?.() 
               ? data.createdAt.toDate().toISOString() 
@@ -80,13 +84,6 @@ export function FeaturedArticles({ onSelectArticle, onViewAll }: FeaturedArticle
             const updatedAt = data.updatedAt?.toDate?.() 
               ? data.updatedAt.toDate().toISOString() 
               : new Date().toISOString();
-            
-            // For VIP users, filter out VIP articles they don't have access to
-            if (userProfile?.role === 'vip' && data.vipOnly && data.vipUsers) {
-              if (Array.isArray(data.vipUsers) && !data.vipUsers.includes(userProfile.uid)) {
-                return null;
-              }
-            }
             
             return {
               id: doc.id,
@@ -97,6 +94,8 @@ export function FeaturedArticles({ onSelectArticle, onViewAll }: FeaturedArticle
           })
           .filter(Boolean) as Article[];
 
+        console.log('Filtered articles count:', fetchedArticles.length);
+        
         if (fetchAll) {
           setAllArticles(fetchedArticles);
           setArticles(fetchedArticles);
@@ -154,7 +153,7 @@ export function FeaturedArticles({ onSelectArticle, onViewAll }: FeaturedArticle
     <div className="space-y-6" ref={containerRef}>
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-900">Featured Articles</h2>
-        {userProfile ? (
+        {user ? (
           viewingAll ? (
             <button 
               onClick={handleShowLess}
@@ -173,9 +172,9 @@ export function FeaturedArticles({ onSelectArticle, onViewAll }: FeaturedArticle
             </button>
           )
         ) : (
-          <button className="text-indigo-600 hover:text-indigo-700 font-medium">
+          <Link to="/signin" className="text-indigo-600 hover:text-indigo-700 font-medium">
             Sign in to view more
-          </button>
+          </Link>
         )}
       </div>
       
@@ -225,7 +224,7 @@ export function FeaturedArticles({ onSelectArticle, onViewAll }: FeaturedArticle
               ))
             ) : (
               <div className="col-span-3 text-center py-12">
-                <p className="text-gray-500">No articles available. Please sign in to view more content.</p>
+                <p className="text-gray-500">No articles found. Please check back later.</p>
               </div>
             )}
           </div>
