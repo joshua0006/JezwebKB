@@ -22,7 +22,13 @@ function SortableRow({ tutorial, onEdit, onDelete }: SortableRowProps) {
     transition,
     isDragging
   } = useSortable({ id: tutorial.id });
-
+  const [imageError, setImageError] = useState(false);
+  const fallbackImage = '/images/jezweb.webp';
+  
+  const handleImageError = () => {
+    setImageError(true);
+  };
+  
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -44,9 +50,10 @@ function SortableRow({ tutorial, onEdit, onDelete }: SortableRowProps) {
             <GripVertical className="h-5 w-5" />
           </div>
           <img
-            src={tutorial.image}
+            src={imageError ? fallbackImage : (tutorial.image || fallbackImage)}
             alt={tutorial.title}
             className="h-10 w-10 rounded-lg object-cover"
+            onError={handleImageError}
           />
           <div className="ml-4">
             <div className="text-sm font-medium text-gray-900">

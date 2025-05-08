@@ -1,4 +1,30 @@
 import { Article } from '../types';
+import gettingStartedWordPress from './tutorials/getting-started-wordpress.json';
+import elementorBasics from './tutorials/elementor-basics.json';
+import gravityFormsGuide from './tutorials/gravity-forms-guide.json';
+import elementorInterfaceBasics from './tutorials/elementor-interface-basics.json';
+import elementorWidgetsGuide from './tutorials/elementor-widgets-guide.json';
+import elementorResponsiveDesign from './tutorials/elementor-responsive-design.json';
+import elementorAdvancedTechniques from './tutorials/elementor-advanced-techniques.json';
+import gravityFormsAdvanced from './tutorials/gravity-forms-advanced.json';
+import gravityFormsStyling from './tutorials/gravity-forms-styling.json';
+import gravityFormsNotifications from './tutorials/gravity-forms-notifications.json';
+import elementorHeadingWidget from './tutorials/elementor-heading-widget.json';
+import elementorImageWidget from './tutorials/elementor-image-widget.json';
+import elementorTextEditorWidget from './tutorials/elementor-text-editor-widget.json';
+import elementorButtonWidget from './tutorials/elementor-button-widget.json';
+import elementorSectionWidget from './tutorials/elementor-section-widget.json';
+import wordpressSecurity from './tutorials/wordpress-security.json';
+import wordpressSpeedOptimization from './tutorials/wordpress-speed-optimization.json';
+import wordpressSeoGuide from './tutorials/wordpress-seo-guide.json';
+import wordpressBackupRestore from './tutorials/wordpress-backup-restore.json';
+import wordpressPluginsGuide from './tutorials/wordpress-plugins-guide.json';
+import wordpressMaintenance from './tutorials/wordpress-maintenance.json';
+import wordpressCustomization from './tutorials/wordpress-customization.json';
+import shopifyGettingStarted from './tutorials/shopify-getting-started.json';
+import shopifyProductManagement from './tutorials/shopify-product-management.json';
+import shopifyThemeCustomization from './tutorials/shopify-theme-customization.json';
+import shopifyMarketingTools from './tutorials/shopify-marketing-tools.json';
 
 export const articles: Article[] = [
   {
@@ -11,7 +37,10 @@ export const articles: Article[] = [
     tags: ['basics', 'getting-started', 'wordpress'],
     videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
     createdAt: '2024-03-15',
-    updatedAt: '2024-03-15'
+    updatedAt: '2024-03-15',
+    published: true,
+    createdBy: 'admin',
+    priority: 1
   },
   {
     id: '2',
@@ -23,7 +52,10 @@ export const articles: Article[] = [
     tags: ['elementor', 'page-builder', 'design'],
     videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
     createdAt: '2024-03-15',
-    updatedAt: '2024-03-15'
+    updatedAt: '2024-03-15',
+    published: true,
+    createdBy: 'admin',
+    priority: 2
   },
   {
     id: '3',
@@ -35,6 +67,29 @@ export const articles: Article[] = [
     tags: ['forms', 'gravity-forms', 'contact'],
     videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
     createdAt: '2024-03-15',
-    updatedAt: '2024-03-15'
+    updatedAt: '2024-03-15',
+    published: true,
+    createdBy: 'admin',
+    priority: 3
   }
 ];
+
+export function getArticleById(id: string) {
+  return articles.find(article => article.id === id);
+}
+
+export function getArticlesByCategory(categoryId: string) {
+  return articles.filter(article => article.category === categoryId);
+}
+
+export function getArticlesByTag(tag: string) {
+  return articles.filter(article => article.tags.includes(tag));
+}
+
+export function getPublishedArticles() {
+  return articles.filter(article => article.published);
+}
+
+export function getSortedArticles() {
+  return [...articles].sort((a, b) => (a.priority || 999) - (b.priority || 999));
+}

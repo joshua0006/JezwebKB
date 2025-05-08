@@ -48,9 +48,8 @@ export function AdminDashboard() {
       }
     };
 
-    if (userProfile?.role === 'admin') {
-      fetchStats();
-    }
+    // Allow any authenticated user to fetch stats
+    fetchStats();
   }, [userProfile]);
 
   return (

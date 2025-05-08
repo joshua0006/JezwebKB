@@ -3,11 +3,13 @@ import { useState, useEffect } from 'react';
 import { doc, getDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { format } from 'date-fns';
-import { Layout, Tag } from 'lucide-react';
+import { Layout, Tag, BookmarkPlus, CheckSquare } from 'lucide-react';
 import { ArticleContent } from '../components/ArticleContent';
 import { useBreadcrumbs } from '../context/BreadcrumbContext';
 import { isFirestoreTimestamp, timestampToDate, processFirebaseContent } from '../utils/firebaseUtils';
 import { ErrorBoundary } from '../components/ErrorBoundary';
+import { useAuth } from '../context/AuthContext';
+import { articleUserService } from '../services/articleUserService';
 
 // Article type definition
 interface Article {
@@ -29,11 +31,23 @@ interface Article {
 export function ArticleView() {
   const { articleId } = useParams<{ articleId: string }>();
   const navigate = useNavigate();
+  const { setBreadcrumbs } = useBreadcrumbs();
+  const { user, userProfile } = useAuth();
   const [article, setArticle] = useState<Article | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { setBreadcrumbs } = useBreadcrumbs();
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [loadingBookmark, setLoadingBookmark] = useState(false);
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [loadingComplete, setLoadingComplete] = useState(false);
+  const [imageError, setImageError] = useState(false);
+  const fallbackImage = '/images/jezweb.webp';
 
+  const handleImageError = () => {
+    setImageError(true);
+  };
+
+  // Fetch article and user status
   useEffect(() => {
     const fetchArticle = async () => {
       if (!articleId) {
@@ -86,6 +100,17 @@ export function ArticleView() {
             { label: categoryName, path: `/categories/${articleData.category}` },
             { label: articleData.title }
           ]);
+
+          // Get user status for this article
+          if (user && userProfile) {
+            try {
+              const status = await articleUserService.getArticleUserStatus(user.uid, articleId);
+              setIsBookmarked(status.isBookmarked);
+              setIsCompleted(status.isComplete);
+            } catch (statusError) {
+              console.error('Error fetching user status:', statusError);
+            }
+          }
         } else {
           setError('Article not found');
         }
@@ -98,7 +123,41 @@ export function ArticleView() {
     };
 
     fetchArticle();
-  }, [articleId, setBreadcrumbs]);
+  }, [articleId, setBreadcrumbs, user, userProfile]);
+
+  // Handle bookmark toggle
+  const handleToggleBookmark = async () => {
+    if (!user || !articleId) return;
+
+    setLoadingBookmark(true);
+    try {
+      await articleUserService.toggleArticleBookmark(user.uid, articleId, !isBookmarked);
+      setIsBookmarked(!isBookmarked);
+    } catch (error) {
+      console.error('Error toggling bookmark status:', error);
+    } finally {
+      setLoadingBookmark(false);
+    }
+  };
+
+  // Handle completion toggle
+  const handleToggleComplete = async () => {
+    if (!user || !articleId) return;
+
+    setLoadingComplete(true);
+    try {
+      if (isCompleted) {
+        await articleUserService.unmarkArticleAsComplete(user.uid, articleId);
+      } else {
+        await articleUserService.markArticleAsComplete(user.uid, articleId);
+      }
+      setIsCompleted(!isCompleted);
+    } catch (error) {
+      console.error('Error toggling completion status:', error);
+    } finally {
+      setLoadingComplete(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -139,9 +198,10 @@ export function ArticleView() {
           {article.image && (
             <div className="w-full h-60 md:h-80 overflow-hidden">
               <img 
-                src={article.image} 
+                src={imageError ? fallbackImage : article.image} 
                 alt={article.title} 
                 className="w-full h-full object-cover"
+                onError={handleImageError}
               />
             </div>
           )}
@@ -191,6 +251,85 @@ export function ArticleView() {
               <ArticleContent content={article.content} />
             ) : (
               <p className="text-gray-500 italic">No content available</p>
+            )}
+
+            {/* User action buttons - visible to all authenticated users */}
+            {user && (
+              <div className="mt-8 border-t border-gray-100 pt-6 flex items-center justify-center space-x-12">
+                <button
+                  onClick={handleToggleBookmark}
+                  disabled={loadingBookmark}
+                  className={`group flex flex-col items-center transition-colors ${
+                    isBookmarked 
+                      ? 'text-yellow-600' 
+                      : 'text-gray-400 hover:text-yellow-600'
+                  }`}
+                  aria-label={isBookmarked ? "Remove bookmark" : "Add bookmark"}
+                  title={isBookmarked ? "Remove bookmark" : "Add bookmark"}
+                >
+                  <div className="relative">
+                    {loadingBookmark ? (
+                      <div className="h-7 w-7 flex items-center justify-center">
+                        <div className="h-6 w-6 rounded-full border-2 border-current border-t-transparent animate-spin"></div>
+                      </div>
+                    ) : (
+                      <BookmarkPlus 
+                        className={`h-7 w-7 transform transition-all duration-200 ease-out ${
+                          isBookmarked 
+                            ? 'text-yellow-600 scale-110' 
+                            : 'group-hover:scale-110 group-active:scale-90'
+                        }`} 
+                      />
+                    )}
+                    {isBookmarked && !loadingBookmark && (
+                      <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-yellow-500"></span>
+                      </span>
+                    )}
+                  </div>
+                  <span className={`text-xs font-medium mt-2 transition-all duration-200 ${isBookmarked ? 'text-yellow-600' : 'text-gray-500'}`}>
+                    {isBookmarked ? 'Bookmarked' : 'Bookmark'}
+                  </span>
+                </button>
+                
+                <button
+                  onClick={handleToggleComplete}
+                  disabled={loadingComplete}
+                  className={`group flex flex-col items-center transition-colors ${
+                    isCompleted 
+                      ? 'text-green-600' 
+                      : 'text-gray-400 hover:text-green-600'
+                  }`}
+                  aria-label={isCompleted ? "Mark as incomplete" : "Mark as complete"}
+                  title={isCompleted ? "Mark as incomplete" : "Mark as complete"}
+                >
+                  <div className="relative">
+                    {loadingComplete ? (
+                      <div className="h-7 w-7 flex items-center justify-center">
+                        <div className="h-6 w-6 rounded-full border-2 border-current border-t-transparent animate-spin"></div>
+                      </div>
+                    ) : (
+                      <CheckSquare 
+                        className={`h-7 w-7 transform transition-all duration-200 ease-out ${
+                          isCompleted 
+                            ? 'text-green-600 scale-110' 
+                            : 'group-hover:scale-110 group-active:scale-90'
+                        }`} 
+                      />
+                    )}
+                    {isCompleted && !loadingComplete && (
+                      <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                      </span>
+                    )}
+                  </div>
+                  <span className={`text-xs font-medium mt-2 transition-all duration-200 ${isCompleted ? 'text-green-600' : 'text-gray-500'}`}>
+                    {isCompleted ? 'Completed' : 'Mark Complete'}
+                  </span>
+                </button>
+              </div>
             )}
           </div>
         </article>

@@ -111,7 +111,7 @@ export function CategoryView() {
             {/* Image Section */}
             <div className="aspect-video w-full overflow-hidden">
               <img
-                src={imageErrors[article.id] ? fallbackImage : (article.image || '/default-article-image.jpg')}
+                src={imageErrors[article.id] ? fallbackImage : (article.image || fallbackImage)}
                 alt={article.title}
                 className="w-full h-full object-cover"
                 onError={() => handleImageError(article.id)}
@@ -122,7 +122,7 @@ export function CategoryView() {
             <div className="p-6">
               {/* Title */}
               <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                <ScrollToTopLink to={`/article/${article.id}`} className="hover:text-blue-600">
+                <ScrollToTopLink to={`/article/${article.id}`} className="hover:text-blue-600 line-clamp-1 block">
                   {article.title}
                 </ScrollToTopLink>
               </h3>

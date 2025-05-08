@@ -10,11 +10,14 @@ import {
   where, 
   serverTimestamp,
   orderBy,
-  Timestamp
+  Timestamp,
+  arrayUnion,
+  arrayRemove
 } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
 import { Article, ArticleFormData } from '../types/article';
 import { FirebaseError } from 'firebase/app';
+import { UserProfile } from '../types/user';
 
 const COLLECTION_NAME = 'articles';
 
@@ -264,5 +267,141 @@ export const getArticlesByCategory = async (category: string) => {
   } catch (error) {
     console.error("Error in getArticlesByCategory:", error);
     throw error; // Let the component handle the error
+  }
+};
+
+export const getArticleBasicInfo = async (articleIds: string[]) => {
+  try {
+    if (!articleIds.length) return {};
+    
+    const articleData: Record<string, { id: string; title: string }> = {};
+    
+    for (const id of articleIds) {
+      try {
+        const articleRef = doc(db, COLLECTION_NAME, id);
+        const articleSnap = await getDoc(articleRef);
+        
+        if (articleSnap.exists()) {
+          const data = articleSnap.data();
+          articleData[id] = {
+            id,
+            title: data.title || 'Untitled Article'
+          };
+        }
+      } catch (error) {
+        console.error(`Error fetching article ${id}:`, error);
+      }
+    }
+    
+    return articleData;
+  } catch (error) {
+    console.error("Error in getArticleBasicInfo:", error);
+    return {};
+  }
+};
+
+export const articleService = {
+  async markArticleAsRead(userId: string, articleId: string): Promise<void> {
+    const userRef = doc(db, 'users', userId);
+    const now = new Date().toISOString();
+    
+    try {
+      // First check if the article is already in the progress tracking
+      const userDoc = await getDoc(userRef);
+      const userData = userDoc.data() as any;
+      
+      await updateDoc(userRef, {
+        readArticles: arrayUnion(articleId),
+        [`articleProgress.${articleId}`]: {
+          completed: true,
+          completedAt: now,
+          lastAccessed: now,
+          timeSpent: userData?.articleProgress?.[articleId]?.timeSpent || 0
+        },
+        updatedAt: now
+      });
+    } catch (error) {
+      console.error('Error marking article as read:', error);
+      throw error;
+    }
+  },
+
+  async toggleFavorite(userId: string, articleId: string, isFavorite: boolean): Promise<void> {
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, {
+      articleFavorites: isFavorite ? arrayUnion(articleId) : arrayRemove(articleId),
+      updatedAt: new Date().toISOString()
+    });
+  },
+
+  async getArticleProgress(userId: string, articleId: string) {
+    if (typeof userId !== 'string') {
+      throw new Error('Invalid user ID');
+    }
+    
+    const userRef = doc(db, 'users', userId);
+    const userSnap = await getDoc(userRef);
+    
+    if (!userSnap.exists()) return { isRead: false, isFavorite: false };
+    
+    const data = userSnap.data() as UserProfile;
+    return {
+      isRead: data.readArticles?.includes(articleId) || false,
+      isFavorite: data.articleFavorites?.includes(articleId) || false
+    };
+  },
+
+  async getArticleById(articleId: string) {
+    const docRef = doc(db, 'articles', articleId);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      return { id: docSnap.id, ...docSnap.data() };
+    }
+    return null;
+  },
+
+  async unmarkArticleAsRead(userId: string, articleId: string): Promise<void> {
+    const userRef = doc(db, 'users', userId);
+    
+    try {
+      // Get the existing progress data to keep it even though we're unmarking as read
+      const userDoc = await getDoc(userRef);
+      const userData = userDoc.data() as any;
+      
+      await updateDoc(userRef, {
+        readArticles: arrayRemove(articleId),
+        [`articleProgress.${articleId}.completed`]: false,
+        [`articleProgress.${articleId}.completedAt`]: null,
+        updatedAt: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error unmarking article as read:', error);
+      throw error;
+    }
+  },
+
+  async updateArticleProgress(userId: string, articleId: string, timeSpent: number): Promise<void> {
+    const userRef = doc(db, 'users', userId);
+    const now = new Date().toISOString();
+    
+    try {
+      // Get existing progress data
+      const userDoc = await getDoc(userRef);
+      const userData = userDoc.data() as any;
+      const currentTimeSpent = userData?.articleProgress?.[articleId]?.timeSpent || 0;
+      
+      await updateDoc(userRef, {
+        [`articleProgress.${articleId}`]: {
+          completed: userData?.articleProgress?.[articleId]?.completed || false,
+          completedAt: userData?.articleProgress?.[articleId]?.completedAt || null,
+          lastAccessed: now,
+          timeSpent: currentTimeSpent + timeSpent
+        },
+        updatedAt: now
+      });
+    } catch (error) {
+      console.error('Error updating article progress:', error);
+      throw error;
+    }
   }
 }; 

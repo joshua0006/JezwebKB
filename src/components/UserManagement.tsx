@@ -33,9 +33,8 @@ export function UserManagement() {
       }
     };
 
-    if (userProfile?.role === 'admin') {
-      fetchUsers();
-    }
+    // Allow any authenticated user to fetch user data
+    fetchUsers();
   }, [userProfile]);
 
   const handleRoleUpdate = async (userId: string, newRole: 'admin' | 'user') => {

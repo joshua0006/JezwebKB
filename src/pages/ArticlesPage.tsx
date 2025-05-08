@@ -28,6 +28,12 @@ export function ArticlesPage() {
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
+  const fallbackImage = '/images/jezweb.webp';
+  
+  const handleImageError = (articleId: string) => {
+    setImageErrors(prev => ({ ...prev, [articleId]: true }));
+  };
 
   useEffect(() => {
     const fetchArticles = async () => {
@@ -101,9 +107,10 @@ export function ArticlesPage() {
             {/* Image Section */}
             <div className="aspect-video w-full overflow-hidden">
               <img
-                src={article.image || '/default-article-image.jpg'}
+                src={imageErrors[article.id] ? fallbackImage : (article.image || fallbackImage)}
                 alt={article.title}
                 className="w-full h-full object-cover"
+                onError={() => handleImageError(article.id)}
               />
             </div>
 
@@ -121,7 +128,7 @@ export function ArticlesPage() {
 
               {/* Title */}
               <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                <Link to={`/article/${article.id}`} className="hover:text-blue-600">
+                <Link to={`/article/${article.id}`} className="hover:text-blue-600 line-clamp-1 block">
                   {article.title}
                 </Link>
               </h3>

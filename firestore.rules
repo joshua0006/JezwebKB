@@ -5,28 +5,29 @@ service cloud.firestore {
     match /articles/{articleId} {
       allow read: if true;
       
-      // Allow creation of articles by authenticated users with admin role
-      // This relies on a separate collection 'users' with role field
-      allow create: if request.auth != null && 
-                    exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-                    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      // Allow creation of articles by any authenticated user
+      allow create: if request.auth != null;
       
-      // Allow updates by authenticated admin users
-      allow update: if request.auth != null &&
-                    exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-                    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      // Allow updates by any authenticated user
+      allow update: if request.auth != null;
       
-      // Allow deletion by authenticated admin users
-      allow delete: if request.auth != null &&
-                    exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-                    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      // Allow deletion by any authenticated user
+      allow delete: if request.auth != null;
+    }
+    
+    // Allow users to read all articles
+    match /tutorials/{tutorialId} {
+      allow read: if true;
+      
+      // Only authenticated users can create/update/delete articles
+      allow create, update, delete: if request.auth != null;
     }
     
     // Allow users to read their own profiles
     match /users/{userId} {
       allow read: if request.auth != null && request.auth.uid == userId;
       
-      // Admin users can read any user profile
+      // Admin users can read any user profile (this remains admin-only)
       allow read: if request.auth != null && 
                    exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
                    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';

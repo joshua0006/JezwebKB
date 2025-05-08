@@ -130,6 +130,9 @@ export function TutorialView() {
   const [relatedArticles, setRelatedArticles] = useState<Article[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [processedContent, setProcessedContent] = useState<string>('');
+  const [isLoadingToggle, setIsLoadingToggle] = useState(false);
+  const [imageError, setImageError] = useState(false);
+  const fallbackImage = '/images/jezweb.webp';
 
   useEffect(() => {
     const loadProgress = async () => {
@@ -344,6 +347,10 @@ export function TutorialView() {
     }
   };
 
+  const handleImageError = () => {
+    setImageError(true);
+  };
+
   if (loading) {
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -400,9 +407,10 @@ export function TutorialView() {
         {tutorial.image && (
           <div className="w-full h-60 md:h-80 overflow-hidden">
             <img 
-              src={tutorial.image} 
+              src={imageError ? fallbackImage : tutorial.image} 
               alt={tutorial.title} 
               className="w-full h-full object-cover"
+              onError={handleImageError}
             />
           </div>
         )}

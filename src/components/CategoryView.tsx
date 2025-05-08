@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ArrowLeft, ChevronRight, Home } from 'lucide-react';
 import { getTutorialsByCategory } from '../data/tutorials';
 import { Category } from '../types';
@@ -14,6 +14,12 @@ interface CategoryViewProps {
 export function CategoryView({ category, onBack }: CategoryViewProps) {
   const { user } = useAuth();
   const tutorials = getTutorialsByCategory(category);
+  const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
+  const fallbackImage = '/images/jezweb.webp';
+  
+  const handleImageError = (tutorialId: string) => {
+    setImageErrors(prev => ({ ...prev, [tutorialId]: true }));
+  };
   
   const accessibleTutorials = tutorials.filter(tutorial => 
     !tutorial.vipOnly || 
@@ -70,9 +76,10 @@ export function CategoryView({ category, onBack }: CategoryViewProps) {
             {/* Image Section */}
             <div className="aspect-video w-full overflow-hidden">
               <img
-                src={tutorial.image || '/default-tutorial-image.jpg'}
+                src={imageErrors[tutorial.id] ? fallbackImage : (tutorial.image || fallbackImage)}
                 alt={tutorial.title}
                 className="w-full h-full object-cover"
+                onError={() => handleImageError(tutorial.id)}
               />
             </div>
 

@@ -26,6 +26,8 @@ export const userService = {
         updatedAt: new Date().toISOString(),
         readTutorials: [],
         favorites: [],
+        readArticles: [],
+        articleFavorites: [],
         progress: {}
       };
 

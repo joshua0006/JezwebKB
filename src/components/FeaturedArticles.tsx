@@ -85,11 +85,14 @@ export function FeaturedArticles({ onSelectArticle, onViewAll }: FeaturedArticle
               ? data.updatedAt.toDate().toISOString() 
               : new Date().toISOString();
             
+            // Ensure the article has an image property even if null/undefined
+            // This allows ArticleCard to handle fallback image consistently
             return {
               id: doc.id,
               ...data,
               createdAt,
-              updatedAt
+              updatedAt,
+              image: data.image || null // Ensure image property exists
             } as Article;
           })
           .filter(Boolean) as Article[];
