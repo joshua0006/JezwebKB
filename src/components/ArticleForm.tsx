@@ -26,7 +26,6 @@ const categories: { value: Category; label: string }[] = [
   { value: 'elementor', label: 'Elementor' },
   { value: 'gravity-forms', label: 'Gravity Forms' },
   { value: 'shopify', label: 'Shopify' },
-  { value: 'general', label: 'General' }
 ];
 
 // Utility function to safely decode HTML content before inserting into editor

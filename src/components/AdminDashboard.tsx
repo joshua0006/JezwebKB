@@ -108,13 +108,6 @@ export function AdminDashboard() {
               </div>
               <div className="flex justify-between items-center">
                 <span className="flex items-center gap-2">
-                  <BookOpen className="w-4 h-4" />
-                  Active Tutorials
-                </span>
-                <span className="font-semibold">{stats.activeTutorials}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="flex items-center gap-2">
                   <FileText className="w-4 h-4" />
                   Total Articles
                 </span>
