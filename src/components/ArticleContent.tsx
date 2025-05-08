@@ -1,11 +1,13 @@
 import { useEffect, useRef } from 'react';
+import { processFirebaseContent } from '../utils/firebaseUtils';
+import { ErrorBoundary } from './ErrorBoundary';
 
 interface ArticleContentProps {
   content: string;
 }
 
-// This component provides enhanced handling of rich text content from the editor
-export const ArticleContent = ({ content }: ArticleContentProps) => {
+// Content component that is wrapped by error boundary
+const ContentRenderer = ({ content }: { content: string }) => {
   const contentRef = useRef<HTMLDivElement>(null);
 
   // Apply additional processing to content after it's rendered
@@ -44,6 +46,18 @@ export const ArticleContent = ({ content }: ArticleContentProps) => {
         }
       }
     });
+    
+    // Handle tables for better mobile responsiveness
+    const tables = contentRef.current.querySelectorAll('table');
+    tables.forEach(table => {
+      // Add responsive table wrapper if not already wrapped
+      if (table.parentElement?.classList.contains('table-responsive')) return;
+      
+      const wrapper = document.createElement('div');
+      wrapper.className = 'table-responsive overflow-x-auto';
+      table.parentNode?.insertBefore(wrapper, table);
+      wrapper.appendChild(table);
+    });
   }, [content]);
 
   return (
@@ -52,5 +66,27 @@ export const ArticleContent = ({ content }: ArticleContentProps) => {
       className="article-content-wrapper prose prose-lg prose-indigo max-w-none"
       dangerouslySetInnerHTML={{ __html: content }}
     />
+  );
+};
+
+// This component provides enhanced handling of rich text content from the editor
+export const ArticleContent = ({ content }: ArticleContentProps) => {
+  // Use Firebase utility to process content safely
+  const processedContent = processFirebaseContent(typeof content === 'string' ? content : '');
+
+  // Custom fallback for content errors
+  const contentErrorFallback = (
+    <div className="p-4 border border-amber-200 bg-amber-50 rounded">
+      <h3 className="font-medium text-amber-800">Content Display Issue</h3>
+      <p className="text-amber-700 mt-1">
+        There was a problem displaying this content. The article may contain formatting that couldn't be rendered properly.
+      </p>
+    </div>
+  );
+
+  return (
+    <ErrorBoundary fallback={contentErrorFallback}>
+      <ContentRenderer content={processedContent} />
+    </ErrorBoundary>
   );
 }; 
