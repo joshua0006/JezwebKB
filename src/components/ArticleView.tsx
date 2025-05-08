@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Clock, ArrowLeft, Tag, Crown, BookOpen, Share2, Heart } from 'lucide-react';
 import { Article } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -13,6 +13,8 @@ interface ArticleViewProps {
 export function ArticleView({ article, onBack }: ArticleViewProps) {
   const { user } = useAuth();
   const [isBookmarked, setIsBookmarked] = React.useState(false);
+  const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
+  const fallbackImage = '/images/jezweb.webp';
 
   const canAccessTutorial = !article.vipOnly || 
     user?.role === 'admin' || 
@@ -31,6 +33,10 @@ export function ArticleView({ article, onBack }: ArticleViewProps) {
         url: window.location.href,
       }).catch(console.error);
     }
+  };
+
+  const handleImageError = (blockId: string) => {
+    setImageErrors(prev => ({ ...prev, [blockId]: true }));
   };
 
   if (!canAccessTutorial) {
@@ -224,7 +230,12 @@ export function ArticleView({ article, onBack }: ArticleViewProps) {
             case 'image':
               return (
                 <div key={block.id} className="rounded-lg overflow-hidden">
-                  <img src={block.content} alt="" className="w-full h-auto" />
+                  <img 
+                    src={imageErrors[block.id] ? fallbackImage : block.content} 
+                    alt="" 
+                    className="w-full h-auto" 
+                    onError={() => handleImageError(block.id)}
+                  />
                 </div>
               );
             case 'video':

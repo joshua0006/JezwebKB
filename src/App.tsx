@@ -8,6 +8,7 @@ import { Footer } from './components/Footer';
 import { Article, Category } from './types';
 import { Dashboard } from './pages/Dashboard';
 import { AuthProvider } from './context/AuthContext';
+import { BreadcrumbProvider } from './context/BreadcrumbContext';
 import { TagView } from './components/TagView';
 import { AllArticlesView } from './components/AllArticlesView';
 import { PrivacyPolicy } from './pages/PrivacyPolicy';
@@ -29,7 +30,9 @@ function App() {
   return (
     <HelmetProvider>
       <AuthProvider>
-        <AppRoutes />
+        <BreadcrumbProvider>
+          <AppRoutes />
+        </BreadcrumbProvider>
       </AuthProvider>
     </HelmetProvider>
   );

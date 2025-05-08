@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom';
-import { LayoutDashboard, Users, Bell, FileText, Wrench } from 'lucide-react';
+import { LayoutDashboard, Users, Bell, FileText } from 'lucide-react';
 
 export function AdminLayout() {
   return (
@@ -58,18 +58,6 @@ export function AdminLayout() {
               >
                 <Bell className="w-5 h-5" />
                 Notifications
-              </NavLink>
-            </li>
-            
-            <li>
-              <NavLink 
-                to="/admin/tools" 
-                className={({ isActive }) => 
-                  `flex items-center gap-2 p-2 rounded-lg hover:bg-indigo-700 ${isActive ? 'bg-indigo-700 font-medium' : ''}`
-                }
-              >
-                <Wrench className="w-5 h-5" />
-                Tools
               </NavLink>
             </li>
           </ul>

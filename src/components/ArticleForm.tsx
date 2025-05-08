@@ -985,7 +985,7 @@ export function ArticleForm() {
             <button
               type="button"
               onClick={addTag}
-              className="bg-indigo-600 text-white px-3 py-2 rounded-r-lg hover:bg-indigo-700 flex items-center justify-center"
+              className="bg-indigo-600 text-white px-3 py-2 rounded-r-lg hover:bg-indigo-700 flex items-center justify-center h-[42px]"
             >
               <Plus className="w-5 h-5" />
             </button>

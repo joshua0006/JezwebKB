@@ -3,9 +3,9 @@ import { useState, useEffect } from 'react';
 import { doc, getDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { format } from 'date-fns';
-import { Breadcrumbs } from '../components/Breadcrumbs';
 import { Layout, Tag } from 'lucide-react';
 import { ArticleContent } from '../components/ArticleContent';
+import { useBreadcrumbs } from '../context/BreadcrumbContext';
 
 // Article type definition
 interface Article {
@@ -65,6 +65,7 @@ export function ArticleView() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [processedContent, setProcessedContent] = useState<string>('');
+  const { setBreadcrumbs } = useBreadcrumbs();
 
   useEffect(() => {
     const fetchArticle = async () => {
@@ -82,6 +83,16 @@ export function ArticleView() {
           } as Article;
           
           setArticle(articleData);
+          
+          // Set breadcrumbs with Home > Category > Article Title
+          const categoryName = articleData.category
+            ? articleData.category.charAt(0).toUpperCase() + articleData.category.slice(1).replace('-', ' ')
+            : 'Unknown Category';
+            
+          setBreadcrumbs([
+            { label: categoryName, path: `/categories/${articleData.category}` },
+            { label: articleData.title }
+          ]);
           
           // Process content for display
           if (articleData.content) {
@@ -111,7 +122,7 @@ export function ArticleView() {
     };
 
     fetchArticle();
-  }, [articleId]);
+  }, [articleId, setBreadcrumbs]);
 
   if (loading) {
     return (
@@ -139,12 +150,6 @@ export function ArticleView() {
     );
   }
 
-  const breadcrumbItems = [
-    { label: 'Articles', path: '/articles' },
-    { label: article.category ? article.category.charAt(0).toUpperCase() + article.category.slice(1).replace('-', ' ') : 'Uncategorized', path: `/categories/${article.category}` },
-    { label: article.title }
-  ];
-
   const formattedDate = article.updatedAt 
     ? format(
         isFirestoreTimestamp(article.updatedAt) 
@@ -156,8 +161,6 @@ export function ArticleView() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <Breadcrumbs items={breadcrumbItems} />
-      
       <article className="bg-white rounded-lg shadow-sm overflow-hidden mt-6">
         {/* Featured Image */}
         {article.image && (

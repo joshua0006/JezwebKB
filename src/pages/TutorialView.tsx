@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getTutorialById } from '../data/tutorials';
-import { Breadcrumbs } from '../components/Breadcrumbs';
 import { 
   Clock, 
   BookOpen, 
@@ -22,12 +21,94 @@ import { ConfirmationModal } from '../components/ConfirmationModal';
 import { Comment } from '../components/Comment';
 import { useGoogleRealtimeLoader } from '@google/generative-ai/react';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { Link } from 'react-router-dom';
+import { doc, getDoc, collection, query, where, getDocs, orderBy, Timestamp } from 'firebase/firestore';
+import { db } from '../config/firebase';
+import { TutorialContent } from '../components/TutorialContent';
+import ScrollToTopLink from '../components/ScrollToTopLink';
+import { format } from 'date-fns';
 
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
 
+// Tutorial type definition
+interface Tutorial {
+  id: string;
+  title: string;
+  description?: string;
+  content: string;
+  category: string;
+  tags: string[];
+  items?: TutorialItem[];
+  level: 'beginner' | 'intermediate' | 'advanced';
+  image?: string;
+  published: boolean;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+  createdBy: string;
+}
+
+interface TutorialItem {
+  id: string;
+  title: string;
+  completed: boolean;
+}
+
+// Article type definition
+interface Article {
+  id: string;
+  title: string;
+  description?: string;
+  content: string;
+  category: string;
+  tags: string[];
+  image?: string;
+  published: boolean;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+  tutorialId?: string;
+  orderInTutorial?: number;
+  createdBy: string;
+}
+
+// Type guard for Firestore Timestamp
+const isFirestoreTimestamp = (value: any): value is Timestamp => {
+  return value && typeof value.toDate === 'function';
+};
+
+// Utility function to safely decode HTML content before displaying
+const decodeHtmlEntities = (html: string): string => {
+  if (!html) return '';
+  
+  // Create a textarea element to safely decode HTML entities
+  const textArea = document.createElement('textarea');
+  textArea.innerHTML = html;
+  const decodedContent = textArea.value;
+  
+  // Clean up
+  textArea.remove();
+  
+  return decodedContent;
+};
+
+// Add a utility to sanitize HTML content as a fallback
+const sanitizeHtml = (html: string): string => {
+  try {
+    // This is a simple sanitizer, in a real app you'd use a library like DOMPurify
+    // Strip out any potentially dangerous elements/attributes
+    const clean = html
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+      .replace(/javascript:/gi, '')
+      .replace(/on\w+=/gi, '');
+    return clean;
+  } catch (error) {
+    console.error('Error sanitizing HTML:', error);
+    return html; // Return the original if sanitization fails
+  }
+};
+
 export function TutorialView() {
-  const { tutorialId } = useParams();
+  const { tutorialId } = useParams<{ tutorialId: string }>();
   const navigate = useNavigate();
   const { user, userProfile, updateProfile } = useAuth();
   const [isRead, setIsRead] = useState(false);
@@ -45,7 +126,10 @@ export function TutorialView() {
   const [commentToDelete, setCommentToDelete] = useState<string | null>(null);
   const [videoSummary, setVideoSummary] = useState('');
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
-  const tutorial = tutorialId ? getTutorialById(tutorialId) : null;
+  const [tutorial, setTutorial] = useState<Tutorial | null>(null);
+  const [relatedArticles, setRelatedArticles] = useState<Article[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [processedContent, setProcessedContent] = useState<string>('');
 
   useEffect(() => {
     const loadProgress = async () => {
@@ -99,6 +183,70 @@ export function TutorialView() {
 
     generateSummary();
   }, [tutorial?.videoUrl]);
+
+  useEffect(() => {
+    const fetchTutorial = async () => {
+      if (!tutorialId) return;
+
+      setLoading(true);
+      try {
+        const tutorialRef = doc(db, 'tutorials', tutorialId);
+        const tutorialSnap = await getDoc(tutorialRef);
+
+        if (tutorialSnap.exists()) {
+          const tutorialData = {
+            id: tutorialSnap.id,
+            ...tutorialSnap.data()
+          } as Tutorial;
+          
+          setTutorial(tutorialData);
+          
+          // Process content for display
+          if (tutorialData.content) {
+            try {
+              // Decode and sanitize content
+              const decodedContent = decodeHtmlEntities(tutorialData.content);
+              const sanitizedContent = sanitizeHtml(decodedContent);
+              
+              // Fix any empty paragraphs that might have been created
+              const cleanedContent = sanitizedContent.replace(/<p><\/p>/g, '<p>&nbsp;</p>');
+              
+              setProcessedContent(cleanedContent);
+            } catch (contentError) {
+              console.error('Error processing tutorial content:', contentError);
+              setProcessedContent(tutorialData.content);
+            }
+          }
+          
+          // Fetch related articles
+          const articlesRef = collection(db, 'articles');
+          const articlesQuery = query(
+            articlesRef, 
+            where('tutorialId', '==', tutorialId),
+            where('published', '==', true),
+            orderBy('orderInTutorial', 'asc')
+          );
+          const querySnapshot = await getDocs(articlesQuery);
+          
+          const articleData = querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          })) as Article[];
+          
+          setRelatedArticles(articleData);
+        } else {
+          setError('Tutorial not found');
+        }
+      } catch (err) {
+        console.error('Error fetching tutorial:', err);
+        setError('Failed to load tutorial');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTutorial();
+  }, [tutorialId]);
 
   const handleToggleRead = async () => {
     if (!user || !tutorialId) return;
@@ -196,14 +344,24 @@ export function TutorialView() {
     }
   };
 
-  if (!tutorial) {
+  if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center p-8 max-w-md bg-white rounded-2xl shadow-lg">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Tutorial Not Found</h1>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Loading Tutorial...</h1>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !tutorial) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">{error || 'Tutorial not found'}</h1>
           <button
             onClick={() => navigate(-1)}
-            className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+            className="text-indigo-600 hover:text-indigo-800"
           >
             Go Back
           </button>
@@ -212,195 +370,132 @@ export function TutorialView() {
     );
   }
 
-  const breadcrumbItems = [
-    {
-      label: tutorial.category.charAt(0).toUpperCase() + tutorial.category.slice(1),
-      path: `/categories/${tutorial.category}`
-    },
-    { label: tutorial.title }
-  ];
+  const formattedDate = tutorial.updatedAt 
+    ? format(
+        isFirestoreTimestamp(tutorial.updatedAt) 
+          ? tutorial.updatedAt.toDate() 
+          : new Date(tutorial.updatedAt as unknown as string), 
+        'MMMM d, yyyy'
+      )
+    : 'Unknown date';
+
+  // Get level badge color
+  const getLevelColor = (level: string) => {
+    switch (level) {
+      case 'beginner':
+        return 'bg-green-100 text-green-800';
+      case 'intermediate':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'advanced':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Breadcrumbs */}
-        <Breadcrumbs items={breadcrumbItems} />
-
-        {/* Video Section */}
-        {tutorial?.videoUrl ? (
-          <div className="mb-8">
-            <div className="aspect-video rounded-xl overflow-hidden shadow-lg">
-              <iframe
-                src={tutorial.videoUrl.replace('watch?v=', 'embed/')}
-                className="w-full h-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
-            </div>
-            
-            <div className="mt-4 p-4 bg-indigo-50 rounded-lg">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-lg font-semibold text-indigo-800">Video Summary</h3>
-                {isGeneratingSummary && <Spinner className="w-5 h-5 text-indigo-600" />}
-              </div>
-              {videoSummary && (
-                <div 
-                  className="prose prose-indigo"
-                  dangerouslySetInnerHTML={{ __html: videoSummary.replace(/\n/g, '<br/>') }}
-                />
-              )}
-            </div>
-          </div>
-        ) : (
-          <div className="mb-8">
-            <img
-              src={tutorial?.image}
-              alt={tutorial?.title}
-              className="w-full h-auto rounded-xl shadow-lg"
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <article className="bg-white rounded-lg shadow-sm overflow-hidden mt-6">
+        {/* Featured Image */}
+        {tutorial.image && (
+          <div className="w-full h-60 md:h-80 overflow-hidden">
+            <img 
+              src={tutorial.image} 
+              alt={tutorial.title} 
+              className="w-full h-full object-cover"
             />
           </div>
         )}
-
-        {/* Main Content */}
-        <article className="bg-white rounded-2xl shadow-sm p-8 mb-8">
+        
+        {/* Tutorial Header */}
+        <div className="p-6 md:p-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between mb-6">
+            <div className="flex items-center mb-4 md:mb-0">
+              <span className={`px-3 py-1 rounded-full text-xs font-medium ${getLevelColor(tutorial.level)}`}>
+                {tutorial.level.charAt(0).toUpperCase() + tutorial.level.slice(1)}
+              </span>
+            </div>
+            <div className="text-sm text-gray-500">
+              Updated on {formattedDate}
+            </div>
+          </div>
+          
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+            {tutorial.title}
+          </h1>
+          
           {tutorial.description && (
-            <p className="text-lg text-gray-600 mb-8 leading-relaxed">
+            <p className="text-lg text-gray-600 mb-6">
               {tutorial.description}
             </p>
           )}
-
-          <div className="prose prose-lg max-w-none 
-            prose-headings:text-gray-900
-            prose-p:text-gray-600 prose-p:leading-relaxed
-            prose-ul:list-disc prose-ul:pl-6
-            prose-li:marker:text-indigo-600
-            prose-code:bg-gray-100 prose-code:px-2 prose-code:py-1 prose-code:rounded
-            prose-pre:bg-gray-900 prose-pre:text-gray-100 prose-pre:p-4 prose-pre:rounded-lg
-            ">
-            {tutorial.blocks.map((block, index) => (
-              <div 
-                key={block.id} 
-                className={index !== 0 ? 'mt-8' : ''}
-                dangerouslySetInnerHTML={{ __html: block.content }} 
-              />
-            ))}
-          </div>
-        </article>
-
-        {/* Progress and Favorites Actions */}
-        <div className="flex gap-4 mb-8">
-          <button
-            onClick={handleToggleRead}
-            disabled={loadingRead}
-            className={`flex items-center gap-2 px-6 py-3 rounded-lg transition-colors ${
-              isRead 
-                ? 'bg-green-600 text-white hover:bg-green-700'
-                : 'bg-green-100 text-green-800 hover:bg-green-200'
-            } ${loadingRead ? 'opacity-70 cursor-not-allowed' : ''}`}
-          >
-            {loadingRead ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : (
-              <CheckCircle2 className="h-5 w-5" />
-            )}
-            {loadingRead 
-              ? 'Processing...' 
-              : isRead ? 'Completed (Click to undo)' : 'Mark as Complete'}
-          </button>
-
-          <button
-            onClick={handleToggleFavorite}
-            disabled={loadingFavorite}
-            className={`flex items-center gap-2 px-6 py-3 rounded-lg transition-colors ${
-              isFavorite
-                ? 'bg-yellow-600 text-white'
-                : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
-            } ${loadingFavorite ? 'opacity-70 cursor-not-allowed' : ''}`}
-          >
-            {loadingFavorite ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : (
-              <Bookmark className="h-5 w-5" />
-            )}
-            {loadingFavorite 
-              ? 'Processing...' 
-              : isFavorite ? 'Favorited' : 'Add to Favorites'}
-          </button>
-        </div>
-
-        {/* Comments Section */}
-        <div className="bg-white rounded-2xl shadow-sm p-8 mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Comments</h2>
-          {user ? (
-            <div className="mb-8">
-              <textarea
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                placeholder="Add a comment..."
-                disabled={isSubmitting}
-                rows={3}
-              />
-              <div className="mt-2 flex justify-end">
-                <button
-                  onClick={handleAddComment}
-                  disabled={isSubmitting || !newComment.trim()}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Spinner className="w-4 h-4 mr-2" />
-                      Posting...
-                    </>
-                  ) : (
-                    'Post Comment'
-                  )}
-                </button>
-              </div>
-            </div>
-          ) : (
-            <p className="text-gray-500 mb-8">Please sign in to leave a comment.</p>
-          )}
           
-          <div className="divide-y divide-gray-200">
-            {comments.map((comment) => (
-              <Comment
-                key={comment.id}
-                comment={comment}
-                currentUserId={user?.uid}
-                onEdit={handleEditComment}
-                onDelete={handleDeleteClick}
-                isDeleting={isDeletingComment === comment.id}
-              />
+          {/* Tags */}
+          {tutorial.tags && tutorial.tags.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-8">
+              {tutorial.tags.map(tag => (
+                <span key={tag} className="bg-gray-100 px-3 py-1 rounded-full text-xs font-medium text-gray-700">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+        
+        {/* Tutorial Content */}
+        <div className="p-6 md:p-8 border-t border-gray-100">
+          {processedContent ? (
+            <TutorialContent content={processedContent} />
+          ) : (
+            <p className="text-gray-500 italic">No content available</p>
+          )}
+        </div>
+      </article>
+      
+      {/* Related Articles Section */}
+      {relatedArticles.length > 0 && (
+        <div className="mt-12">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Tutorial Articles</h2>
+          <div className="space-y-4">
+            {relatedArticles.map((article, index) => (
+              <div key={article.id} className="bg-white rounded-lg shadow-sm border border-gray-100 p-4 md:p-6">
+                <div className="flex items-start">
+                  <div className="flex-shrink-0 bg-indigo-100 text-indigo-800 rounded-full w-8 h-8 flex items-center justify-center mr-4">
+                    {index + 1}
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      <Link to={`/article/${article.id}`} className="hover:text-indigo-600">
+                        {article.title}
+                      </Link>
+                    </h3>
+                    {article.description && (
+                      <p className="text-gray-600 mb-2">
+                        {article.description}
+                      </p>
+                    )}
+                    <Link
+                      to={`/article/${article.id}`}
+                      className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
+                    >
+                      Read Article →
+                    </Link>
+                  </div>
+                </div>
+              </div>
             ))}
           </div>
-
-          <ConfirmationModal
-            isOpen={showDeleteModal}
-            onClose={() => setShowDeleteModal(false)}
-            onConfirm={handleConfirmDelete}
-            title="Delete Comment"
-            message="Are you sure you want to delete this comment? This action cannot be undone."
-          />
         </div>
-
-        {/* Navigation Footer */}
-        <footer className="flex flex-col sm:flex-row gap-4 justify-between">
-          <button
-            onClick={() => navigate(-1)}
-            className="flex items-center justify-center gap-2 px-6 py-3 text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
-          >
-            <ArrowLeft className="h-5 w-5" />
-            Previous Tutorial
-          </button>
-          <button
-            onClick={() => navigate(`/categories/${tutorial.category}`)}
-            className="flex items-center justify-center gap-2 px-6 py-3 text-white bg-indigo-600 border border-transparent rounded-xl hover:bg-indigo-700 transition-colors"
-          >
-            <Folder className="h-5 w-5" />
-            More {tutorial.category} Tutorials
-          </button>
-        </footer>
+      )}
+      
+      {/* Navigation */}
+      <div className="mt-8 flex justify-between">
+        <button
+          onClick={() => navigate(-1)}
+          className="text-indigo-600 hover:text-indigo-800 flex items-center"
+        >
+          ← Back
+        </button>
       </div>
     </div>
   );

@@ -4,12 +4,15 @@ import { Article } from '../types/article';
 import { Link } from 'react-router-dom';
 import { Spinner } from './Spinner';
 import { useAuth } from '../context/AuthContext';
-import { Edit, Trash2, Plus, Tag, FileText } from 'lucide-react';
+import { Edit, Trash2, Plus, Tag, FileText, AlertTriangle } from 'lucide-react';
 
 export function ArticleManager() {
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [articleToDelete, setArticleToDelete] = useState<Article | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { userProfile } = useAuth();
   
   useEffect(() => {
@@ -30,13 +33,26 @@ export function ArticleManager() {
   }, [userProfile]);
   
   const handleDelete = async (id: string) => {
+    setIsDeleting(true);
     try {
       await deleteArticle(id);
       setArticles(articles.filter(article => article.id !== id));
-      setDeleteConfirmId(null);
+      closeModal();
     } catch (error) {
       console.error('Error deleting article:', error);
+    } finally {
+      setIsDeleting(false);
     }
+  };
+
+  const confirmDelete = (article: Article) => {
+    setArticleToDelete(article);
+    setModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setModalOpen(false);
+    setArticleToDelete(null);
   };
   
   const getCategoryLabel = (category: string) => {
@@ -153,35 +169,56 @@ export function ArticleManager() {
                       >
                         <Edit className="w-4 h-4" />
                       </Link>
-                      {deleteConfirmId === article.id ? (
-                        <div className="inline-flex items-center">
-                          <button 
-                            onClick={() => handleDelete(article.id)}
-                            className="bg-red-100 text-red-800 px-2 py-1 text-xs rounded mr-1"
-                          >
-                            Confirm
-                          </button>
-                          <button 
-                            onClick={() => setDeleteConfirmId(null)}
-                            className="bg-gray-100 text-gray-800 px-2 py-1 text-xs rounded"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      ) : (
-                        <button 
-                          onClick={() => setDeleteConfirmId(article.id)}
-                          className="text-red-600 hover:text-red-800 p-1 inline-flex items-center"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
+                      <button 
+                        onClick={() => confirmDelete(article)}
+                        className="text-red-600 hover:text-red-800 p-1 inline-flex items-center"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {modalOpen && articleToDelete && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+            <div className="flex items-center mb-4 text-red-600">
+              <AlertTriangle className="w-6 h-6 mr-2" />
+              <h3 className="text-lg font-semibold">Delete Article</h3>
+            </div>
+            <p className="mb-4">
+              Are you sure you want to delete "{articleToDelete.title}"? This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={closeModal}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                disabled={isDeleting}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDelete(articleToDelete.id)}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <>
+                    <Spinner className="w-4 h-4 text-white" />
+                    Deleting...
+                  </>
+                ) : (
+                  'Delete'
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

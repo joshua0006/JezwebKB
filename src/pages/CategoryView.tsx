@@ -2,7 +2,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 import { Layout, Box, FileText, ShoppingBag } from 'lucide-react';
 import { format } from 'date-fns';
-import { Breadcrumbs } from '../components/Breadcrumbs';
 import ScrollToTopLink from '../components/ScrollToTopLink';
 import { useEffect, useState } from 'react';
 import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
@@ -33,15 +32,16 @@ export function CategoryView() {
   const navigate = useNavigate();
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
+  const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
+  const fallbackImage = '/images/jezweb.webp';
   
+  const handleImageError = (articleId: string) => {
+    setImageErrors(prev => ({ ...prev, [articleId]: true }));
+  };
+
   const categoryName = categoryId 
     ? categoryId.charAt(0).toUpperCase() + categoryId.slice(1).replace('-', ' ')
     : 'Unknown Category';
-
-  const breadcrumbItems = [
-    { label: 'Articles', path: '/articles' },
-    { label: categoryName }
-  ];
 
   useEffect(() => {
     const fetchArticles = async () => {
@@ -101,8 +101,6 @@ export function CategoryView() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-      <Breadcrumbs items={breadcrumbItems} />
-
       <h1 className="text-3xl font-bold text-gray-900 mb-8">Articles in Category: {categoryName}</h1>
       <div className="grid items-center align-center grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
         {articles.map(article => (
@@ -113,9 +111,10 @@ export function CategoryView() {
             {/* Image Section */}
             <div className="aspect-video w-full overflow-hidden">
               <img
-                src={article.image || '/default-article-image.jpg'}
+                src={imageErrors[article.id] ? fallbackImage : (article.image || '/default-article-image.jpg')}
                 alt={article.title}
                 className="w-full h-full object-cover"
+                onError={() => handleImageError(article.id)}
               />
             </div>
 

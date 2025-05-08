@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { PlayCircle, Clock } from 'lucide-react';
 import { Article } from '../types';
 
@@ -8,12 +8,20 @@ interface ArticleCardProps {
 }
 
 export function ArticleCard({ article, onSelect }: ArticleCardProps) {
+  const [imageError, setImageError] = useState(false);
+  const fallbackImage = '/images/jezweb.webp';
+  
+  const handleImageError = () => {
+    setImageError(true);
+  };
+
   return (
     <div className="h-full flex flex-col bg-white rounded-lg shadow-sm hover:shadow-md transition-all border border-gray-100 overflow-hidden">
       <div className="aspect-[2/1] overflow-hidden">
         <img
-          src={article.image}
+          src={imageError ? fallbackImage : article.image}
           alt={article.title}
+          onError={handleImageError}
           className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
         />
       </div>

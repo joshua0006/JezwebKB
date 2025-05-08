@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { collection, query, where, getDocs, Timestamp, orderBy } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { Link } from 'react-router-dom';
-import { Breadcrumbs } from '../components/Breadcrumbs';
 import { format } from 'date-fns';
 
 // Article type definition
@@ -29,10 +28,6 @@ export function ArticlesPage() {
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const breadcrumbItems = [
-    { label: 'Articles' }
-  ];
 
   useEffect(() => {
     const fetchArticles = async () => {
@@ -66,7 +61,6 @@ export function ArticlesPage() {
   if (loading) {
     return (
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <Breadcrumbs items={breadcrumbItems} />
         <div className="text-center py-16">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">Loading Articles...</h1>
         </div>
@@ -77,7 +71,6 @@ export function ArticlesPage() {
   if (error) {
     return (
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <Breadcrumbs items={breadcrumbItems} />
         <div className="text-center py-16">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">{error}</h1>
         </div>
@@ -88,7 +81,6 @@ export function ArticlesPage() {
   if (!articles.length) {
     return (
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <Breadcrumbs items={breadcrumbItems} />
         <div className="text-center py-16">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">No Articles Found</h1>
         </div>
@@ -98,8 +90,6 @@ export function ArticlesPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <Breadcrumbs items={breadcrumbItems} />
-      
       <h1 className="text-3xl font-bold text-gray-900 mb-8">All Articles</h1>
       
       <div className="grid items-center align-center grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
