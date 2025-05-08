@@ -189,7 +189,7 @@ export function FeaturedArticles({ onSelectArticle, onViewAll }: FeaturedArticle
             {articles.map((article) => (
               <Link
                 key={article.id}
-                to={`/articles/${article.id}`}
+                to={`/article/${article.id}`}
                 className="group h-full"
                 onClick={() => onSelectArticle(article)}
               >
@@ -214,7 +214,7 @@ export function FeaturedArticles({ onSelectArticle, onViewAll }: FeaturedArticle
               articles.map((article) => (
                 <Link
                   key={article.id}
-                  to={`/articles/${article.id}`}
+                  to={`/article/${article.id}`}
                   className="group h-full"
                   onClick={() => onSelectArticle(article)}
                 >
