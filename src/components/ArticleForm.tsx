@@ -70,6 +70,35 @@ const sanitizeHtml = (html: string): string => {
   }
 };
 
+// Helper function to ensure URLs are properly formatted
+const formatUrl = (url: string): string => {
+  // If URL is empty, return empty string
+  if (!url) return '';
+  
+  // Trim the URL
+  const trimmedUrl = url.trim();
+  
+  // Check if URL already has a protocol (http://, https://, ftp://, etc.)
+  if (/^[a-z]+:\/\//i.test(trimmedUrl)) {
+    return trimmedUrl; // URL already has a protocol
+  }
+  
+  // Check if URL is a valid URL format (domain.tld)
+  // This regexp checks for something like: example.com, sub.example.co.uk, etc.
+  if (/^[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,}(:[0-9]{1,5})?(\/.*)?$/i.test(trimmedUrl)) {
+    return `https://${trimmedUrl}`;
+  }
+  
+  // If it doesn't match domain pattern, it might be a relative URL or invalid
+  // For safety, we'll add a protocol only if it looks like a domain without protocol
+  if (trimmedUrl.includes('.') && !trimmedUrl.startsWith('/')) {
+    return `https://${trimmedUrl}`;
+  }
+  
+  // Return the original for relative URLs or invalid URLs
+  return trimmedUrl;
+};
+
 export function ArticleForm() {
   const { id } = useParams<{ id: string }>();
   const isEditing = id !== 'new';
@@ -527,11 +556,11 @@ export function ArticleForm() {
       
       // If no link found but we have selection, prepare for new link
       if (!(element instanceof HTMLElement && element.tagName === 'A')) {
-        setLinkUrl('https://');
+        setLinkUrl('');
       }
     } else {
       // Default for new link
-      setLinkUrl('https://');
+      setLinkUrl('');
       setLinkText('');
     }
     
@@ -562,11 +591,14 @@ export function ArticleForm() {
       }
     }
     
+    // Format the URL to ensure it has proper protocol
+    const formattedUrl = formatUrl(linkUrl);
+    
     // If no text is selected but link text is provided, insert it
     if (currentSelection === '' && linkText) {
-      document.execCommand('insertHTML', false, `<a href="${linkUrl}" target="_blank">${linkText}</a>`);
-    } else if (linkUrl) {
-      document.execCommand('createLink', false, linkUrl);
+      document.execCommand('insertHTML', false, `<a href="${formattedUrl}" target="_blank">${linkText}</a>`);
+    } else if (formattedUrl) {
+      document.execCommand('createLink', false, formattedUrl);
       
       // Set target="_blank" on all links
       const links = editorRef.current.querySelectorAll('a');
@@ -1129,34 +1161,33 @@ export function ArticleForm() {
                     URL
                   </label>
                   <div className="flex items-stretch">
-  <input
-    ref={linkInputRef}
-    type="text"
-    id="link-url"
-    value={linkUrl}
-    onChange={(e) => setLinkUrl(e.target.value)}
-    className="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-    placeholder="https://example.com"
-    onKeyDown={(e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        applyLink();
-      }
-    }}
-  />
-  {linkUrl && (
-    <a 
-      href={linkUrl}
-      target="_blank" 
-      rel="noopener noreferrer"
-      className="flex items-center px-3 border border-gray-300 border-l-0 rounded-r-lg bg-gray-100 text-gray-600 hover:bg-gray-200"
-      title="Test link"
-    >
-      <ExternalLink className="w-4 h-4" />
-    </a>
-  )}
-</div>
-
+                    <input
+                      ref={linkInputRef}
+                      type="text"
+                      id="link-url"
+                      value={linkUrl}
+                      onChange={(e) => setLinkUrl(e.target.value)}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      placeholder="e.g., google.com.au or https://example.com"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          applyLink();
+                        }
+                      }}
+                    />
+                    {linkUrl && (
+                      <a 
+                        href={formatUrl(linkUrl)}
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="flex items-center px-3 border border-gray-300 border-l-0 rounded-r-lg bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        title="Test link"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
+                    )}
+                  </div>
                 </div>
                 
                 <div className="flex justify-end space-x-2 pt-2">
