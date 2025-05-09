@@ -4,7 +4,7 @@ import { Article } from '../types/article';
 import { Link } from 'react-router-dom';
 import { Spinner } from './Spinner';
 import { useAuth } from '../context/AuthContext';
-import { Edit, Trash2, Plus, Tag, FileText, AlertTriangle, Search, Filter, Calendar, X, ChevronDown } from 'lucide-react';
+import { Edit, Trash2, Plus, Tag, FileText, AlertTriangle, Search, Filter, Calendar, X, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export function ArticleManager() {
   const [articles, setArticles] = useState<Article[]>([]);
@@ -25,6 +25,10 @@ export function ArticleManager() {
   });
   const [showFilters, setShowFilters] = useState(false);
   
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  
   useEffect(() => {
     const fetchArticles = async () => {
       try {
@@ -41,6 +45,11 @@ export function ArticleManager() {
       fetchArticles();
     }
   }, [userProfile]);
+  
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedCategories, selectedStatus, dateRange]);
   
   const handleDelete = async (id: string) => {
     setIsDeleting(true);
@@ -138,8 +147,7 @@ export function ArticleManager() {
       // Search term filter
       const matchesSearch = searchTerm === '' || 
         article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (article.content && article.content.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (article.createdBy && article.createdBy.toLowerCase().includes(searchTerm.toLowerCase()));
+        (article.content && article.content.toLowerCase().includes(searchTerm.toLowerCase()));
       
       // Category filter
       const matchesCategory = selectedCategories.length === 0 || 
@@ -171,6 +179,37 @@ export function ArticleManager() {
     });
   }, [articles, searchTerm, selectedCategories, selectedStatus, dateRange]);
 
+  // Calculate pagination
+  const paginatedArticles = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredArticles.slice(startIndex, endIndex);
+  }, [filteredArticles, currentPage, itemsPerPage]);
+
+  // Calculate total pages
+  const totalPages = useMemo(() => {
+    return Math.ceil(filteredArticles.length / itemsPerPage);
+  }, [filteredArticles, itemsPerPage]);
+
+  // Page navigation functions
+  const goToPage = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
+
+  const goToNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(prev => prev + 1);
+    }
+  };
+
+  const goToPreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(prev => prev - 1);
+    }
+  };
+
   const resetFilters = () => {
     setSearchTerm('');
     setSelectedCategories([]);
@@ -192,6 +231,11 @@ export function ArticleManager() {
     } else {
       setSelectedStatus([...selectedStatus, status]);
     }
+  };
+
+  const handleItemsPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setItemsPerPage(Number(e.target.value));
+    setCurrentPage(1); // Reset to first page when changing items per page
   };
   
   if (loading) {
@@ -366,7 +410,7 @@ export function ArticleManager() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {filteredArticles.map(article => {
+              {paginatedArticles.map(article => {
                 const category = getCategoryLabel(article.category);
                 const date = formatDate(article.createdAt);
                 
@@ -407,6 +451,63 @@ export function ArticleManager() {
               })}
             </tbody>
           </table>
+          
+          {/* Pagination Controls */}
+          <div className="flex flex-wrap items-center justify-between px-4 py-3 bg-white border-t border-gray-200 sm:px-6">
+            <div className="flex items-center text-sm text-gray-500 gap-2">
+              <span>Showing</span>
+              <select 
+                className="px-2 py-1 border border-gray-300 rounded-md text-sm"
+                value={itemsPerPage}
+                onChange={handleItemsPerPageChange}
+              >
+                <option value={5}>5</option>
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
+              </select>
+              <span>of {filteredArticles.length} articles</span>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <button
+                onClick={goToPreviousPage}
+                disabled={currentPage === 1}
+                className={`relative inline-flex items-center px-2 py-2 rounded-md border ${
+                  currentPage === 1 
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                } text-sm font-medium`}
+              >
+                <span className="sr-only">Previous</span>
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+              
+              <div className="flex items-center">
+                {/* Current page indicator */}
+                <span className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-md">
+                  {currentPage}
+                </span>
+                <span className="px-1 text-gray-500">of</span>
+                <span className="px-3 py-1 text-gray-700">
+                  {totalPages || 1}
+                </span>
+              </div>
+              
+              <button
+                onClick={goToNextPage}
+                disabled={currentPage === totalPages || totalPages === 0}
+                className={`relative inline-flex items-center px-2 py-2 rounded-md border ${
+                  currentPage === totalPages || totalPages === 0
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                } text-sm font-medium`}
+              >
+                <span className="sr-only">Next</span>
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
