@@ -6,6 +6,7 @@ import { storage } from '../config/firebase';
 import { userService } from '../services/userService';
 import { User, Upload, X } from 'lucide-react';
 import { Spinner } from '../components/Spinner';
+import { uploadImage } from '../services/storageService';
 
 export function Profile() {
   const { user, userProfile, updateProfile } = useAuth();
@@ -57,37 +58,41 @@ export function Profile() {
 
       // Handle photo upload/deletion
       if (photoFile) {
-        // Generate a unique file path that includes timestamp to avoid conflicts
-        const timestamp = new Date().getTime();
-        const photoPath = `profilePhotos/${user.uid}_${timestamp}`;
-        const storageRef = ref(storage, photoPath);
-        
-        // Upload new photo
-        await uploadBytes(storageRef, photoFile);
-        photoURL = await getDownloadURL(storageRef);
-        photoUpdated = true;
-        
-        // Delete old photo if exists and isn't a Google photo
-        // Only attempt to delete if it's our own storage URL, not an external one like Google
-        if (userProfile?.photoURL && 
-            userProfile.photoURL.includes('firebasestorage') && 
-            !userProfile.photoURL.includes('googleusercontent')) {
-          try {
-            // Extract the path from the URL - we need to handle this carefully
-            // Firebase storage URLs contain a token, so we can't simply delete by URL
-            // We'll need to reconstruct the ref
-            
-            // This is a simplified approach - the robust approach would be to store
-            // the full path in Firestore when uploading
-            const oldPhotoRef = ref(storage, userProfile.photoURL);
-            await deleteObject(oldPhotoRef).catch(err => {
-              console.log("Failed to delete old photo, but continuing", err);
-              // Non-blocking, continue even if this fails
-            });
-          } catch (error) {
-            console.error('Error deleting old photo:', error);
-            // Non-blocking error - continue with profile update
+        try {
+          // Generate a unique file path that includes timestamp to avoid conflicts
+          const timestamp = new Date().getTime();
+          const photoPath = `profilePhotos/${user.uid}_${timestamp}`;
+          
+          // Use the storageService for upload with progress tracking
+          photoURL = await uploadImage(photoFile, photoPath, (progress) => {
+            // You can add a progress indicator here if needed
+            console.log(`Upload progress: ${progress}%`);
+          });
+          
+          photoUpdated = true;
+          
+          // Delete old photo if exists and isn't a Google photo
+          if (userProfile?.photoURL && 
+              userProfile.photoURL.includes('firebasestorage') && 
+              !userProfile.photoURL.includes('googleusercontent')) {
+            try {
+              // Extract the path from the URL - we need to handle this carefully
+              // Firebase storage URLs contain a token, so we can't simply delete by URL
+              const oldPhotoRef = ref(storage, userProfile.photoURL);
+              await deleteObject(oldPhotoRef).catch(err => {
+                console.log("Failed to delete old photo, but continuing", err);
+                // Non-blocking, continue even if this fails
+              });
+            } catch (error) {
+              console.error('Error deleting old photo:', error);
+              // Non-blocking error - continue with profile update
+            }
           }
+        } catch (uploadError) {
+          console.error('Error uploading profile photo:', uploadError);
+          setError('Failed to upload profile photo. Please try again.');
+          setIsSubmitting(false);
+          return;
         }
       } else if (previewUrl === null && photoURL) {
         // User wants to remove photo, but only if it's not a Google photo
