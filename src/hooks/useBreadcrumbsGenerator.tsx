@@ -13,9 +13,9 @@ const routeToBreadcrumb: Record<string, (params?: Record<string, string>) => Bre
   ],
   
   // Single article
-  '/article/:articleId': (params) => [
+  '/article/:slug': (params) => [
     { label: 'Articles', path: '/articles' },
-    { label: params?.articleId ? 'Article' : 'Article not found' }
+    { label: params?.slug ? 'Article' : 'Article not found' }
   ],
   
   // Category view

@@ -76,10 +76,23 @@ const convertDatesToTimestamps = (data: any) => {
   return result;
 };
 
+// Helper function to generate a URL-friendly slug from a title
+export const generateSlugFromTitle = (title: string): string => {
+  return title
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, '') // Remove special characters
+    .replace(/\s+/g, '-') // Replace spaces with hyphens
+    .replace(/-+/g, '-') // Replace multiple hyphens with a single hyphen
+    .trim(); // Remove leading/trailing spaces
+};
+
 export const createArticle = async (articleData: ArticleFormData, userId: string) => {
   try {
     // Verify user is authenticated
     const currentUser = checkAuth();
+    
+    // Generate slug from title
+    const slug = generateSlugFromTitle(articleData.title);
     
     // Ensure all required fields are present
     const articleWithRequired = {
@@ -90,7 +103,8 @@ export const createArticle = async (articleData: ArticleFormData, userId: string
       content: articleData.content || '',
       category: articleData.category || 'general',
       tags: articleData.tags || [],
-      published: typeof articleData.published === 'boolean' ? articleData.published : false
+      published: typeof articleData.published === 'boolean' ? articleData.published : false,
+      slug // Add the slug field
     };
     
     // Ensure timestamps are properly formatted
@@ -136,6 +150,11 @@ export const updateArticle = async (id: string, articleData: Partial<ArticleForm
       ...articleData,
       updatedAt: serverTimestamp()
     };
+    
+    // If title is being updated, regenerate the slug
+    if (articleData.title) {
+      updateData.slug = generateSlugFromTitle(articleData.title);
+    }
     
     // Remove undefined values to prevent Firestore errors
     Object.keys(updateData).forEach(key => {
@@ -403,5 +422,49 @@ export const articleService = {
       console.error('Error updating article progress:', error);
       throw error;
     }
+  }
+};
+
+// Utility function to backfill slugs for existing articles
+export const backfillSlugsForArticles = async () => {
+  try {
+    // Verify user is authenticated
+    const currentUser = checkAuth();
+    
+    // Get all articles
+    const articlesRef = collection(db, COLLECTION_NAME);
+    const querySnapshot = await getDocs(articlesRef);
+    
+    let updatedCount = 0;
+    
+    // For each article without a slug, generate one and update
+    for (const doc of querySnapshot.docs) {
+      const articleData = doc.data();
+      
+      // Skip if already has a slug
+      if (articleData.slug) continue;
+      
+      // Generate a slug from the title
+      const title = articleData.title || 'untitled';
+      const slug = generateSlugFromTitle(title);
+      
+      // Update the document with the new slug
+      const articleRef = doc.ref;
+      await updateDoc(articleRef, { 
+        slug,
+        updatedAt: serverTimestamp()
+      });
+      
+      updatedCount++;
+    }
+    
+    return { 
+      success: true, 
+      message: `Updated ${updatedCount} articles with slugs`,
+      updatedCount
+    };
+  } catch (error) {
+    console.error("Error in backfillSlugsForArticles:", error);
+    throw error;
   }
 }; 

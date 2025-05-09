@@ -17,11 +17,24 @@ interface Article {
   createdAt: Timestamp;
   updatedAt: Timestamp;
   createdBy: string;
+  slug?: string;
 }
 
 // Type guard for Firestore Timestamp
 const isFirestoreTimestamp = (value: any): value is Timestamp => {
   return value && typeof value.toDate === 'function';
+};
+
+// Helper function to generate a slug from title if it doesn't exist
+const getSlug = (article: Article): string => {
+  if (article.slug) return article.slug;
+  
+  return article.title
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .trim();
 };
 
 export function ArticlesPage() {
@@ -128,7 +141,7 @@ export function ArticlesPage() {
 
               {/* Title */}
               <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                <Link to={`/article/${article.id}`} className="hover:text-blue-600 line-clamp-1 block">
+                <Link to={`/article/${article.slug || getSlug(article)}`} className="hover:text-blue-600 line-clamp-1 block">
                   {article.title}
                 </Link>
               </h3>
@@ -156,7 +169,7 @@ export function ArticlesPage() {
                   )}
                 </span>
                 <Link
-                  to={`/article/${article.id}`}
+                  to={`/article/${article.slug || getSlug(article)}`}
                   className="flex-shrink-0 flex items-center justify-center px-3 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 transition-colors"
                 >
                   Read More

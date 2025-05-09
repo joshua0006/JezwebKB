@@ -41,7 +41,7 @@ export function AppRoutes() {
 
         {/* Article routes */}
         <Route path="/articles" element={<ArticlesPage />} />
-        <Route path="/article/:articleId" element={<ArticleView />} />
+        <Route path="/article/:slug" element={<ArticleView />} />
 
         {/* Tutorial routes */}
         <Route path="/tutorials">

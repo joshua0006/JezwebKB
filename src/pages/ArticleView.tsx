@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { doc, getDoc, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, Timestamp, collection, query, where, getDocs, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { format } from 'date-fns';
 import { Layout, Tag, BookmarkPlus, CheckSquare } from 'lucide-react';
@@ -24,12 +24,13 @@ interface Article {
   createdAt: Timestamp;
   updatedAt: Timestamp;
   createdBy: string;
+  slug: string;
 }
 
 // Remove duplicate type guard and utility functions since we're now importing them
 
 export function ArticleView() {
-  const { articleId } = useParams<{ articleId: string }>();
+  const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { setBreadcrumbs } = useBreadcrumbs();
   const { user, userProfile } = useAuth();
@@ -50,8 +51,8 @@ export function ArticleView() {
   // Fetch article and user status
   useEffect(() => {
     const fetchArticle = async () => {
-      if (!articleId) {
-        setError('Article ID is missing');
+      if (!slug) {
+        setError('Article slug is missing');
         setLoading(false);
         return;
       }
@@ -60,59 +61,97 @@ export function ArticleView() {
       setError(null);
       
       try {
-        const articleRef = doc(db, 'articles', articleId);
-        const articleSnap = await getDoc(articleRef);
-
-        if (articleSnap.exists()) {
-          const rawData = articleSnap.data();
-          
-          // Validate required fields
-          if (!rawData.title || !rawData.content || !rawData.category) {
-            console.error('Article is missing required fields:', rawData);
-            setError('Article data is incomplete');
-            setLoading(false);
-            return;
-          }
-          
-          // Parse and set article data
-          const articleData = {
-            id: articleSnap.id,
-            title: rawData.title || 'Untitled Article',
-            content: rawData.content || '',
-            category: rawData.category || 'general',
-            tags: Array.isArray(rawData.tags) ? rawData.tags : [],
-            image: rawData.image || undefined,
-            published: Boolean(rawData.published),
-            createdAt: rawData.createdAt || Timestamp.now(),
-            updatedAt: rawData.updatedAt || Timestamp.now(),
-            createdBy: rawData.createdBy || 'unknown',
-            description: rawData.description
-          } as Article;
-          
-          setArticle(articleData);
-          
-          // Set breadcrumbs with Home > Category > Article Title
-          const categoryName = articleData.category
-            ? articleData.category.charAt(0).toUpperCase() + articleData.category.slice(1).replace('-', ' ')
-            : 'Unknown Category';
+        // First try to find by slug
+        const articlesCollection = collection(db, 'articles');
+        const q = query(articlesCollection, where('slug', '==', slug));
+        const querySnapshot = await getDocs(q);
+        
+        // If no results, check if slug might be an article ID (for backward compatibility)
+        if (querySnapshot.empty) {
+          try {
+            // Try to get the article directly by ID
+            const articleRef = doc(db, 'articles', slug);
+            const articleSnap = await getDoc(articleRef);
             
-          setBreadcrumbs([
-            { label: categoryName, path: `/categories/${articleData.category}` },
-            { label: articleData.title }
-          ]);
-
-          // Get user status for this article
-          if (user && userProfile) {
-            try {
-              const status = await articleUserService.getArticleUserStatus(user.uid, articleId);
-              setIsBookmarked(status.isBookmarked);
-              setIsCompleted(status.isComplete);
-            } catch (statusError) {
-              console.error('Error fetching user status:', statusError);
+            if (articleSnap.exists()) {
+              const rawData = articleSnap.data();
+              
+              // Generate a slug for this article
+              const title = rawData.title || 'Untitled Article';
+              const generatedSlug = title
+                .toLowerCase()
+                .replace(/[^\w\s-]/g, '')
+                .replace(/\s+/g, '-')
+                .replace(/-+/g, '-')
+                .trim();
+              
+              // Update the article with the new slug
+              await updateDoc(articleRef, { 
+                slug: generatedSlug,
+                updatedAt: serverTimestamp()
+              });
+              
+              // Redirect to the proper slug URL
+              navigate(`/article/${generatedSlug}`, { replace: true });
+              return;
             }
+          } catch (idError) {
+            console.error('Error checking article by ID:', idError);
           }
-        } else {
+          
           setError('Article not found');
+          setLoading(false);
+          return;
+        }
+        
+        const articleDoc = querySnapshot.docs[0];
+        const rawData = articleDoc.data();
+        
+        // Validate required fields
+        if (!rawData.title || !rawData.content || !rawData.category) {
+          console.error('Article is missing required fields:', rawData);
+          setError('Article data is incomplete');
+          setLoading(false);
+          return;
+        }
+        
+        // Parse and set article data
+        const articleData = {
+          id: articleDoc.id,
+          title: rawData.title || 'Untitled Article',
+          content: rawData.content || '',
+          category: rawData.category || 'general',
+          tags: Array.isArray(rawData.tags) ? rawData.tags : [],
+          image: rawData.image || undefined,
+          published: Boolean(rawData.published),
+          createdAt: rawData.createdAt || Timestamp.now(),
+          updatedAt: rawData.updatedAt || Timestamp.now(),
+          createdBy: rawData.createdBy || 'unknown',
+          description: rawData.description,
+          slug: rawData.slug || slug
+        } as Article;
+        
+        setArticle(articleData);
+        
+        // Set breadcrumbs with Home > Category > Article Title
+        const categoryName = articleData.category
+          ? articleData.category.charAt(0).toUpperCase() + articleData.category.slice(1).replace('-', ' ')
+          : 'Unknown Category';
+          
+        setBreadcrumbs([
+          { label: categoryName, path: `/categories/${articleData.category}` },
+          { label: articleData.title }
+        ]);
+
+        // Get user status for this article
+        if (user && userProfile) {
+          try {
+            const status = await articleUserService.getArticleUserStatus(user.uid, articleDoc.id);
+            setIsBookmarked(status.isBookmarked);
+            setIsCompleted(status.isComplete);
+          } catch (statusError) {
+            console.error('Error fetching user status:', statusError);
+          }
         }
       } catch (err) {
         console.error('Error fetching article:', err);
@@ -123,15 +162,15 @@ export function ArticleView() {
     };
 
     fetchArticle();
-  }, [articleId, setBreadcrumbs, user, userProfile]);
+  }, [slug, setBreadcrumbs, user, userProfile, navigate]);
 
   // Handle bookmark toggle
   const handleToggleBookmark = async () => {
-    if (!user || !articleId) return;
+    if (!user || !article) return;
 
     setLoadingBookmark(true);
     try {
-      await articleUserService.toggleArticleBookmark(user.uid, articleId, !isBookmarked);
+      await articleUserService.toggleArticleBookmark(user.uid, article.id, !isBookmarked);
       setIsBookmarked(!isBookmarked);
     } catch (error) {
       console.error('Error toggling bookmark status:', error);
@@ -142,14 +181,14 @@ export function ArticleView() {
 
   // Handle completion toggle
   const handleToggleComplete = async () => {
-    if (!user || !articleId) return;
+    if (!user || !article) return;
 
     setLoadingComplete(true);
     try {
       if (isCompleted) {
-        await articleUserService.unmarkArticleAsComplete(user.uid, articleId);
+        await articleUserService.unmarkArticleAsComplete(user.uid, article.id);
       } else {
-        await articleUserService.markArticleAsComplete(user.uid, articleId);
+        await articleUserService.markArticleAsComplete(user.uid, article.id);
       }
       setIsCompleted(!isCompleted);
     } catch (error) {

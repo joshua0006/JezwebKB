@@ -12,6 +12,7 @@ export interface Article {
   updatedAt: string;
   createdBy: string;
   blocks?: TutorialBlock[];
+  slug?: string;
 }
 
 export interface ArticleFormData {
