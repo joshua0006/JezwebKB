@@ -2,7 +2,7 @@ import React from 'react';
 import { BookOpen, ShieldCheck } from 'lucide-react';
 import { UserMenu } from './UserMenu';
 import { Link, useLocation } from 'react-router-dom';
-import Search from './Search';
+import { EnhancedSearch } from './EnhancedSearch';
 import { useAuth } from '../context/AuthContext';
 
 export function Navbar() {
@@ -33,7 +33,7 @@ export function Navbar() {
           </div>
           
           <div className="flex-1 flex items-center justify-center px-6">
-            <Search />
+            <EnhancedSearch className="w-full max-w-lg" />
           </div>
 
           <div className="flex items-center space-x-4">

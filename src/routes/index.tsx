@@ -14,6 +14,7 @@ import { TermsOfService } from '../pages/TermsOfService';
 import { SignIn } from '../pages/SignIn';
 import { SignUp } from '../pages/SignUp';
 import { NotFound } from '../pages/NotFound';
+import { SearchResults } from '../pages/SearchResults';
 import { YouTubeSummaryTool } from '../components/YouTubeSummaryTool';
 import { AdminDashboard } from '../components/AdminDashboard';
 import { UserManagement } from '../components/UserManagement';
@@ -36,6 +37,7 @@ export function AppRoutes() {
         <Route path="/signin" element={<SignIn />} />
         <Route path="/signup" element={<SignUp />} />
         <Route path="/video-summary" element={<YouTubeSummaryTool />} />
+        <Route path="/search" element={<SearchResults />} />
 
         {/* Article routes */}
         <Route path="/articles" element={<ArticlesPage />} />
