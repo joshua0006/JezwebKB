@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { getDownloadURL, ref, uploadBytes, deleteObject } from 'firebase/storage';
@@ -16,6 +16,16 @@ export function Profile() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Update local state when userProfile changes
+  useEffect(() => {
+    if (userProfile) {
+      setUsername(userProfile.username || '');
+      if (!photoFile) { // Only update if no local changes pending
+        setPreviewUrl(userProfile.photoURL || null);
+      }
+    }
+  }, [userProfile, photoFile]);
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -105,10 +115,12 @@ export function Profile() {
         updates.photoURL = photoURL;
       }
       
-      await userService.updateUserProfile(user.uid, updates);
-
-      // Update local state
+      // Update local state immediately before Firebase update
       updateProfile(updates);
+      
+      // Then update in Firestore
+      await userService.updateUserProfile(user.uid, updates);
+      
       navigate('/dashboard');
     } catch (error) {
       console.error('Error updating profile:', error);
@@ -122,6 +134,15 @@ export function Profile() {
   const isGooglePhoto = () => {
     return userProfile?.photoURL?.includes('googleusercontent.com') || false;
   };
+
+  // Clean up object URLs on unmount
+  useEffect(() => {
+    return () => {
+      if (previewUrl && previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-indigo-50 py-12">
@@ -158,6 +179,7 @@ export function Profile() {
                       src={previewUrl}
                       alt="Profile preview"
                       className="h-32 w-32 rounded-full object-cover border-4 border-white shadow-lg transform group-hover:scale-105 transition-transform"
+                      crossOrigin="anonymous"
                     />
                     <button
                       type="button"
