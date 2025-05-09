@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { getAllArticles, deleteArticle } from '../services/articleService';
 import { Article } from '../types/article';
 import { Link } from 'react-router-dom';
 import { Spinner } from './Spinner';
 import { useAuth } from '../context/AuthContext';
-import { Edit, Trash2, Plus, Tag, FileText, AlertTriangle } from 'lucide-react';
+import { Edit, Trash2, Plus, Tag, FileText, AlertTriangle, Search, Filter, Calendar, X, ChevronDown } from 'lucide-react';
 
 export function ArticleManager() {
   const [articles, setArticles] = useState<Article[]>([]);
@@ -14,6 +14,16 @@ export function ArticleManager() {
   const [articleToDelete, setArticleToDelete] = useState<Article | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const { userProfile } = useAuth();
+  
+  // Search and filter states
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedStatus, setSelectedStatus] = useState<string[]>([]);
+  const [dateRange, setDateRange] = useState<{start: string, end: string}>({
+    start: '',
+    end: ''
+  });
+  const [showFilters, setShowFilters] = useState(false);
   
   useEffect(() => {
     const fetchArticles = async () => {
@@ -99,6 +109,90 @@ export function ArticleManager() {
       return 'Invalid date';
     }
   };
+
+  // Get unique categories from articles
+  const availableCategories = useMemo(() => {
+    const categories = new Set<string>();
+    articles.forEach(article => {
+      if (article.category) {
+        categories.add(article.category);
+      }
+    });
+    return Array.from(categories);
+  }, [articles]);
+
+  // Get unique authors (createdBy)
+  const availableAuthors = useMemo(() => {
+    const authors = new Set<string>();
+    articles.forEach(article => {
+      if (article.createdBy) {
+        authors.add(article.createdBy);
+      }
+    });
+    return Array.from(authors);
+  }, [articles]);
+
+  // Filter articles based on search term and filters
+  const filteredArticles = useMemo(() => {
+    return articles.filter(article => {
+      // Search term filter
+      const matchesSearch = searchTerm === '' || 
+        article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (article.content && article.content.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (article.createdBy && article.createdBy.toLowerCase().includes(searchTerm.toLowerCase()));
+      
+      // Category filter
+      const matchesCategory = selectedCategories.length === 0 || 
+        (article.category && selectedCategories.includes(article.category));
+      
+      // Status filter
+      const matchesStatus = selectedStatus.length === 0 || 
+        (selectedStatus.includes('published') && article.published) ||
+        (selectedStatus.includes('draft') && !article.published);
+      
+      // Date filter
+      let matchesDate = true;
+      if (dateRange.start) {
+        const startDate = new Date(dateRange.start);
+        const articleDate = new Date(article.createdAt);
+        if (articleDate < startDate) {
+          matchesDate = false;
+        }
+      }
+      if (dateRange.end) {
+        const endDate = new Date(dateRange.end);
+        const articleDate = new Date(article.createdAt);
+        if (articleDate > endDate) {
+          matchesDate = false;
+        }
+      }
+      
+      return matchesSearch && matchesCategory && matchesStatus && matchesDate;
+    });
+  }, [articles, searchTerm, selectedCategories, selectedStatus, dateRange]);
+
+  const resetFilters = () => {
+    setSearchTerm('');
+    setSelectedCategories([]);
+    setSelectedStatus([]);
+    setDateRange({ start: '', end: '' });
+  };
+
+  const toggleCategoryFilter = (category: string) => {
+    if (selectedCategories.includes(category)) {
+      setSelectedCategories(selectedCategories.filter(c => c !== category));
+    } else {
+      setSelectedCategories([...selectedCategories, category]);
+    }
+  };
+
+  const toggleStatusFilter = (status: string) => {
+    if (selectedStatus.includes(status)) {
+      setSelectedStatus(selectedStatus.filter(s => s !== status));
+    } else {
+      setSelectedStatus([...selectedStatus, status]);
+    }
+  };
   
   if (loading) {
     return (
@@ -120,12 +214,144 @@ export function ArticleManager() {
           Create Article
         </Link>
       </div>
+
+      {/* Search and Filter Section */}
+      <div className="mb-6">
+        {/* Search Bar */}
+        <div className="relative mb-4">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search className="h-5 w-5 text-gray-400" />
+          </div>
+          <input
+            type="text"
+            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            placeholder="Search articles by title or content"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+
+        {/* Filter Controls */}
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+          <button 
+            onClick={() => setShowFilters(!showFilters)}
+            className="flex items-center gap-1 text-sm text-gray-600 px-3 py-1.5 border border-gray-300 rounded hover:bg-gray-50"
+          >
+            <Filter className="w-4 h-4" />
+            Filters
+            <ChevronDown className={`w-4 h-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+          </button>
+          
+          {(selectedCategories.length > 0 || selectedStatus.length > 0 || dateRange.start || dateRange.end) && (
+            <button 
+              onClick={resetFilters}
+              className="flex items-center gap-1 text-sm text-red-600 px-3 py-1.5 border border-red-200 rounded hover:bg-red-50"
+            >
+              <X className="w-4 h-4" />
+              Clear Filters
+            </button>
+          )}
+          
+          <div className="text-sm text-gray-500">
+            {filteredArticles.length} article{filteredArticles.length !== 1 ? 's' : ''} found
+          </div>
+        </div>
+        
+        {/* Expanded Filters */}
+        {showFilters && (
+          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 mb-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Category Filter */}
+            <div>
+              <h3 className="text-sm font-medium text-gray-700 mb-2">Categories</h3>
+              <div className="space-y-1">
+                {availableCategories.map(category => (
+                  <div key={category} className="flex items-center">
+                    <input
+                      id={`category-${category}`}
+                      type="checkbox"
+                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                      checked={selectedCategories.includes(category)}
+                      onChange={() => toggleCategoryFilter(category)}
+                    />
+                    <label htmlFor={`category-${category}`} className="ml-2 text-sm text-gray-600">
+                      {getCategoryLabel(category).label}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            {/* Status Filter */}
+            <div>
+              <h3 className="text-sm font-medium text-gray-700 mb-2">Status</h3>
+              <div className="space-y-1">
+                <div className="flex items-center">
+                  <input
+                    id="status-published"
+                    type="checkbox"
+                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                    checked={selectedStatus.includes('published')}
+                    onChange={() => toggleStatusFilter('published')}
+                  />
+                  <label htmlFor="status-published" className="ml-2 text-sm text-gray-600">
+                    Published
+                  </label>
+                </div>
+                <div className="flex items-center">
+                  <input
+                    id="status-draft"
+                    type="checkbox"
+                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                    checked={selectedStatus.includes('draft')}
+                    onChange={() => toggleStatusFilter('draft')}
+                  />
+                  <label htmlFor="status-draft" className="ml-2 text-sm text-gray-600">
+                    Draft
+                  </label>
+                </div>
+              </div>
+            </div>
+            
+            {/* Date Filter */}
+            <div>
+              <h3 className="text-sm font-medium text-gray-700 mb-2">Date Range</h3>
+              <div className="space-y-2">
+                <div>
+                  <label htmlFor="date-from" className="block text-xs text-gray-500">From</label>
+                  <input
+                    id="date-from"
+                    type="date"
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 text-sm"
+                    value={dateRange.start}
+                    onChange={(e) => setDateRange({...dateRange, start: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="date-to" className="block text-xs text-gray-500">To</label>
+                  <input
+                    id="date-to"
+                    type="date"
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 text-sm"
+                    value={dateRange.end}
+                    onChange={(e) => setDateRange({...dateRange, end: e.target.value})}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
       
-      {articles.length === 0 ? (
+      {filteredArticles.length === 0 ? (
         <div className="text-center py-8 bg-gray-50 rounded-lg">
           <FileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
           <p className="text-gray-500">No articles found</p>
-          <p className="text-sm text-gray-400 mt-1">Start by creating your first article</p>
+          <p className="text-sm text-gray-400 mt-1">
+            {articles.length > 0 
+              ? 'Try adjusting your search filters'
+              : 'Start by creating your first article'
+            }
+          </p>
         </div>
       ) : (
         <div className="overflow-x-auto">
@@ -140,7 +366,7 @@ export function ArticleManager() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {articles.map(article => {
+              {filteredArticles.map(article => {
                 const category = getCategoryLabel(article.category);
                 const date = formatDate(article.createdAt);
                 
