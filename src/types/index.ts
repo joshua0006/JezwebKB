@@ -38,4 +38,11 @@ export interface Tutorial extends Article {
   vipOnly?: boolean; // If true, only VIP users can access this tutorial
 }
 
+export interface UserProfile {
+  uid: string;
+  email: string;
+  displayName: string;
+  role: 'admin' | 'user';
+}
+
 export interface TutorialBlock {

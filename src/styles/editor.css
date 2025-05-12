@@ -1,0 +1,123 @@
+/* Rich Text Editor Styles */
+
+/* Editor container */
+.ql-container {
+  border-radius: 0 0 0.5rem 0.5rem;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  font-size: 1rem;
+  height: auto;
+  min-height: 15rem;
+}
+
+/* Toolbar */
+.ql-toolbar {
+  border-radius: 0.5rem 0.5rem 0 0;
+  border-color: #e5e7eb;
+  background-color: #f9fafb;
+}
+
+/* Editor height and scrolling */
+.ql-editor {
+  min-height: 15rem;
+  max-height: 30rem;
+  overflow-y: auto;
+}
+
+/* Media containers */
+.ql-editor .media-container {
+  margin: 1.5rem 0;
+  position: relative;
+}
+
+/* Alignment classes */
+.ql-editor .media-container.align-left {
+  text-align: left;
+}
+
+.ql-editor .media-container.align-center {
+  text-align: center;
+}
+
+.ql-editor .media-container.align-right {
+  text-align: right;
+}
+
+/* Image and video sizing */
+.ql-editor .quill-image,
+.ql-editor .quill-video {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.375rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.ql-editor .quill-image.size-small,
+.ql-editor .quill-video.size-small {
+  max-width: 25%;
+}
+
+.ql-editor .quill-image.size-medium,
+.ql-editor .quill-video.size-medium {
+  max-width: 50%;
+}
+
+.ql-editor .quill-image.size-large,
+.ql-editor .quill-video.size-large {
+  max-width: 75%;
+}
+
+.ql-editor .quill-image.size-full,
+.ql-editor .quill-video.size-full {
+  width: 100%;
+}
+
+/* Caption styles */
+.ql-editor .media-caption {
+  font-style: italic;
+  color: #6b7280;
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+}
+
+/* Placeholder text */
+.ql-editor.ql-blank::before {
+  color: #9ca3af;
+  font-style: italic;
+}
+
+/* Focus styles */
+.ql-container:focus-within {
+  border-color: #6366f1;
+}
+
+/* Preview mode */
+.article-preview img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.375rem;
+  margin: 1rem 0;
+}
+
+.article-preview video {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.375rem;
+  margin: 1rem 0;
+}
+
+/* Hover effects for better UX */
+.ql-editor .media-container:hover {
+  cursor: pointer;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  border-radius: 0.375rem;
+}
+
+/* Responsive design */
+@media (max-width: 640px) {
+  .ql-editor .quill-image.size-small,
+  .ql-editor .quill-video.size-small,
+  .ql-editor .quill-image.size-medium,
+  .ql-editor .quill-video.size-medium {
+    max-width: 100%;
+  }
+} 

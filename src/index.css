@@ -93,3 +93,59 @@
   height: 0;
   pointer-events: none;
 }
+
+/* Global Media Styles */
+.ql-video {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Responsive iframes */
+.iframe-wrapper {
+  position: relative;
+  padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+  height: 0;
+  overflow: hidden;
+  max-width: 100%;
+  border-radius: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.iframe-wrapper iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+/* Media containers */
+.media-container {
+  margin: 1.5rem 0;
+  max-width: 100%;
+}
+
+.media-container.align-center {
+  text-align: center;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.media-container.align-left {
+  text-align: left;
+}
+
+.media-container.align-right {
+  text-align: right;
+  margin-left: auto;
+}
+
+/* Media caption */
+.media-caption {
+  font-style: italic;
+  color: #6b7280;
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+}

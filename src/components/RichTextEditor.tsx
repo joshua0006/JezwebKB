@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
+import DirectQuill from './DirectQuill';
+import 'quill/dist/quill.snow.css';
 
 interface RichTextEditorProps {
   value: string;
@@ -19,13 +19,13 @@ export function RichTextEditor({ value, onChange, placeholder, error }: RichText
   // Quill modules configuration
   const modules = {
     toolbar: [
-      [{ header: [1, 2, 3, 4, 5, 6, false] }],
+      [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
       ['bold', 'italic', 'underline', 'strike'],
-      [{ list: 'ordered' }, { list: 'bullet' }],
-      [{ indent: '-1' }, { indent: '+1' }],
+      [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+      [{ 'indent': '-1' }, { 'indent': '+1' }],
       ['link', 'image'],
       ['clean'],
-    ],
+    ]
   };
 
   // Quill formats
@@ -36,7 +36,7 @@ export function RichTextEditor({ value, onChange, placeholder, error }: RichText
     'link', 'image'
   ];
 
-  // Only render ReactQuill on the client-side to avoid SSR issues
+  // Only render DirectQuill on the client-side to avoid SSR issues
   if (!mounted) {
     return (
       <div 
@@ -49,7 +49,7 @@ export function RichTextEditor({ value, onChange, placeholder, error }: RichText
 
   return (
     <div className="rich-text-editor">
-      <ReactQuill
+      <DirectQuill
         value={value}
         onChange={onChange}
         modules={modules}
@@ -61,18 +61,24 @@ export function RichTextEditor({ value, onChange, placeholder, error }: RichText
       {error && (
         <p className="mt-1 text-sm text-red-500">{error}</p>
       )}
-      <style jsx>{`
-        .rich-text-editor {
-          margin-bottom: 2rem;
-        }
-        
-        .quill-error .ql-toolbar.ql-snow,
-        .quill-error .ql-container.ql-snow {
-          border-color: #ef4444;
-        }
-        
-        :global(.ql-editor) {
-          min-height: 200px;
-          font-size: 16px;
-        }
+      <style>
+        {`
+          .rich-text-editor {
+            margin-bottom: 2rem;
+          }
+          
+          .quill-error .ql-toolbar.ql-snow,
+          .quill-error .ql-container.ql-snow {
+            border-color: #ef4444;
+          }
+          
+          .ql-editor {
+            min-height: 200px;
+            font-size: 16px;
+          }
+        `}
+      </style>
+    </div>
+  );
+}
  

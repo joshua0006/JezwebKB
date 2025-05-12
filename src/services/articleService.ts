@@ -104,7 +104,9 @@ export const createArticle = async (articleData: ArticleFormData, userId: string
       category: articleData.category || 'general',
       tags: articleData.tags || [],
       published: typeof articleData.published === 'boolean' ? articleData.published : false,
-      slug // Add the slug field
+      slug, // Add the slug field
+      additionalImages: articleData.additionalImages || [],
+      videos: articleData.videos || []
     };
     
     // Ensure timestamps are properly formatted
@@ -154,6 +156,15 @@ export const updateArticle = async (id: string, articleData: Partial<ArticleForm
     // If title is being updated, regenerate the slug
     if (articleData.title) {
       updateData.slug = generateSlugFromTitle(articleData.title);
+    }
+    
+    // Ensure media arrays are handled properly
+    if (articleData.additionalImages) {
+      updateData.additionalImages = articleData.additionalImages;
+    }
+    
+    if (articleData.videos) {
+      updateData.videos = articleData.videos;
     }
     
     // Remove undefined values to prevent Firestore errors
@@ -209,12 +220,23 @@ export const getArticleById = async (id: string) => {
         ? articleData.updatedAt.toDate().toISOString() 
         : articleData.updatedAt;
       
+      // Ensure media arrays are properly handled
+      const additionalImages = Array.isArray(articleData.additionalImages) 
+        ? articleData.additionalImages 
+        : [];
+        
+      const videos = Array.isArray(articleData.videos) 
+        ? articleData.videos 
+        : [];
+      
       return { 
         id: articleSnap.id, 
         ...articleData,
         content: processedContent,
         createdAt,
-        updatedAt
+        updatedAt,
+        additionalImages,
+        videos
       } as Article;
     } else {
       throw new Error('Article not found');
@@ -242,11 +264,22 @@ export const getAllArticles = async () => {
         ? data.updatedAt.toDate().toISOString() 
         : data.updatedAt;
       
+      // Ensure media arrays are properly handled
+      const additionalImages = Array.isArray(data.additionalImages) 
+        ? data.additionalImages 
+        : [];
+        
+      const videos = Array.isArray(data.videos) 
+        ? data.videos 
+        : [];
+      
       return {
         id: doc.id,
         ...data,
         createdAt,
-        updatedAt
+        updatedAt,
+        additionalImages,
+        videos
       };
     }) as Article[];
   } catch (error) {
@@ -276,11 +309,22 @@ export const getArticlesByCategory = async (category: string) => {
         ? data.updatedAt.toDate().toISOString() 
         : data.updatedAt;
       
+      // Ensure media arrays are properly handled
+      const additionalImages = Array.isArray(data.additionalImages) 
+        ? data.additionalImages 
+        : [];
+        
+      const videos = Array.isArray(data.videos) 
+        ? data.videos 
+        : [];
+      
       return {
         id: doc.id,
         ...data,
         createdAt,
-        updatedAt
+        updatedAt,
+        additionalImages,
+        videos
       };
     }) as Article[];
   } catch (error) {

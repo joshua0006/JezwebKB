@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { doc, getDoc, Timestamp, collection, query, where, getDocs, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { format } from 'date-fns';
-import { Layout, Tag, BookmarkPlus, CheckSquare } from 'lucide-react';
+import { Layout, Tag, BookmarkPlus, CheckSquare, Film } from 'lucide-react';
 import { ArticleContent } from '../components/ArticleContent';
 import { useBreadcrumbs } from '../context/BreadcrumbContext';
 import { isFirestoreTimestamp, timestampToDate, processFirebaseContent } from '../utils/firebaseUtils';
@@ -25,6 +25,10 @@ interface Article {
   updatedAt: Timestamp;
   createdBy: string;
   slug: string;
+  author?: string;
+  publicationDate?: string;
+  additionalImages?: string[];
+  videos?: string[];
 }
 
 // Remove duplicate type guard and utility functions since we're now importing them
@@ -41,11 +45,19 @@ export function ArticleView() {
   const [loadingBookmark, setLoadingBookmark] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [loadingComplete, setLoadingComplete] = useState(false);
-  const [imageError, setImageError] = useState(false);
+  const [mediaError, setMediaError] = useState(false);
+  const [isVideo, setIsVideo] = useState(false);
   const fallbackImage = '/images/jezweb.webp';
 
-  const handleImageError = () => {
-    setImageError(true);
+  const handleMediaError = () => {
+    setMediaError(true);
+  };
+
+  // Check if a URL is a video
+  const isVideoUrl = (url: string): boolean => {
+    return !!url.match(/\.(mp4|webm|ogg|mov)($|\?)/i) || 
+           url.includes('firebasestorage.googleapis.com') && 
+           url.includes('video');
   };
 
   // Fetch article and user status
@@ -128,9 +140,18 @@ export function ArticleView() {
           updatedAt: rawData.updatedAt || Timestamp.now(),
           createdBy: rawData.createdBy || 'unknown',
           description: rawData.description,
-          slug: rawData.slug || slug
+          slug: rawData.slug || slug,
+          author: rawData.author || '',
+          publicationDate: rawData.publicationDate || '',
+          additionalImages: Array.isArray(rawData.additionalImages) ? rawData.additionalImages : [],
+          videos: Array.isArray(rawData.videos) ? rawData.videos : []
         } as Article;
         
+        // Check if the featured media is a video
+        if (articleData.image) {
+          setIsVideo(isVideoUrl(articleData.image));
+        }
+
         setArticle(articleData);
         
         // Set breadcrumbs with Home > Category > Article Title
@@ -229,19 +250,35 @@ export function ArticleView() {
     ? format(timestampToDate(article.updatedAt), 'MMMM d, yyyy')
     : 'Unknown date';
 
+  // Display the publication date if available, otherwise use the updated date
+  const displayDate = article.publicationDate || formattedDate;
+  
+  // Process content to ensure proper iframe handling
+  const processedContent = article.content ? processFirebaseContent(article.content) : '';
+
   return (
     <ErrorBoundary>
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <article className="bg-white rounded-lg shadow-sm overflow-hidden mt-6">
-          {/* Featured Image */}
+          {/* Featured Media (Image or Video) */}
           {article.image && (
             <div className="w-full h-60 md:h-80 overflow-hidden">
-              <img 
-                src={imageError ? fallbackImage : article.image} 
-                alt={article.title} 
-                className="w-full h-full object-cover"
-                onError={handleImageError}
-              />
+              {isVideo ? (
+                <video 
+                  src={mediaError ? fallbackImage : article.image} 
+                  controls
+                  poster={fallbackImage}
+                  className="w-full h-full object-cover" 
+                  onError={handleMediaError}
+                />
+              ) : (
+                <img 
+                  src={mediaError ? fallbackImage : article.image} 
+                  alt={article.title} 
+                  className="w-full h-full object-cover"
+                  onError={handleMediaError}
+                />
+              )}
             </div>
           )}
           
@@ -256,8 +293,14 @@ export function ArticleView() {
                   {article.category.charAt(0).toUpperCase() + article.category.slice(1).replace('-', ' ')}
                 </span>
               </div>
-              <div className="text-sm text-gray-500">
-                Updated on {formattedDate}
+              <div className="text-sm text-gray-500 flex flex-wrap items-center">
+                {article.author && (
+                  <>
+                    <span className="mr-2">By {article.author}</span>
+                    <span className="mx-2">•</span>
+                  </>
+                )}
+                <span>{displayDate}</span>
               </div>
             </div>
             
@@ -286,10 +329,72 @@ export function ArticleView() {
           
           {/* Article Content */}
           <div className="p-6 md:p-8 pt-0 md:pt-0 border-t border-gray-100">
-            {article.content ? (
-              <ArticleContent content={article.content} />
+            {processedContent ? (
+              <ArticleContent content={processedContent} />
             ) : (
               <p className="text-gray-500 italic">No content available</p>
+            )}
+
+            {/* Additional Images Gallery */}
+            {article.additionalImages && article.additionalImages.length > 0 && (
+              <div className="mt-8 border-t border-gray-100 pt-6">
+                <h3 className="text-xl font-semibold mb-4">Gallery</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  {article.additionalImages.map((imgUrl, index) => (
+                    <div key={`img-${index}`} className="relative rounded-lg overflow-hidden h-40">
+                      <img 
+                        src={imgUrl} 
+                        alt={`Additional image ${index + 1}`} 
+                        className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.onerror = null;
+                          target.src = fallbackImage;
+                          target.classList.add('image-error');
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Videos Collection */}
+            {article.videos && article.videos.length > 0 && (
+              <div className="mt-8 border-t border-gray-100 pt-6">
+                <h3 className="text-xl font-semibold mb-4">Videos</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {article.videos.map((videoUrl, index) => (
+                    <div key={`video-${index}`} className="relative rounded-lg overflow-hidden">
+                      <div className="relative pb-[56.25%] h-0 overflow-hidden">
+                        <video 
+                          src={videoUrl} 
+                          controls
+                          className="absolute top-0 left-0 w-full h-full object-cover rounded-lg" 
+                          poster={fallbackImage}
+                          onError={(e) => {
+                            console.error('Video failed to load:', videoUrl);
+                            const target = e.target as HTMLVideoElement;
+                            target.onerror = null;
+                            // Add placeholder or error message
+                            const parent = target.parentElement;
+                            if (parent) {
+                              parent.innerHTML = `<div class="flex items-center justify-center h-full min-h-[200px] bg-gray-100 text-gray-500 absolute top-0 left-0 w-full rounded-lg">
+                                <div class="text-center p-4">
+                                  <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                  </svg>
+                                  <p>Video unavailable</p>
+                                </div>
+                              </div>`;
+                            }
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
 
             {/* User action buttons - visible to all authenticated users */}
