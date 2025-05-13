@@ -21,7 +21,9 @@ import { UserManagement } from '../components/UserManagement';
 import { NotificationManager } from '../components/NotificationManager';
 import { AdminLayout } from '../components/AdminLayout';
 import { ArticleManager } from '../components/ArticleManager';
-import { ArticleForm } from '../components/ArticleForm';
+
+import { ArticleCreator } from '../components/ArticleCreator';
+import { EditArticle } from '../components/EditArticle';
 import { AdminTools } from '../pages/AdminTools';
 
 
@@ -85,9 +87,9 @@ export function AppRoutes() {
           <Route index element={<AdminDashboard />} />
           <Route path="users" element={<UserManagement />} />
           <Route path="notifications" element={<NotificationManager />} />
-          <Route path="articles" element={<ArticleManager />} />
-          <Route path="articles/new" element={<ArticleForm />} />
-          <Route path="articles/:id/edit" element={<ArticleForm />} />
+          <Route path="articles" element={<ArticleManager />} /> 
+          <Route path="articles/create" element={<ArticleCreator />} />
+          <Route path="articles/:id/edit-new" element={<EditArticle />} />
           <Route path="tools" element={<AdminTools />} />
         </Route>
 

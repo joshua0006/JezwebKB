@@ -4,6 +4,7 @@ import { SearchResult, clearSearchCache, sortSearchResults } from '../utils/adva
 import { useSearch } from '../hooks/useSearch';
 import { Category } from '../types';
 import { ChevronLeft, ChevronRight, Filter, Search as SearchIcon, Clock, Tag, Menu, X, Sliders, RefreshCw } from 'lucide-react';
+import { getAllCategories } from '../services/articleService';
 
 // Simple PageHeader component defined inline since the import was missing
 const PageHeader = ({ title }: { title: string }) => (
@@ -76,14 +77,29 @@ export function SearchResults() {
   const resultsPerPage = 10;
   const totalPages = Math.ceil(totalResults / resultsPerPage);
   
-  // Categories list
-  const categories: { id: Category; label: string }[] = [
-    { id: 'wordpress', label: 'WordPress' },
-    { id: 'elementor', label: 'Elementor' },
-    { id: 'gravity-forms', label: 'Gravity Forms' },
-    { id: 'shopify', label: 'Shopify' },
-    { id: 'general', label: 'General' }
-  ];
+  const [categories, setCategories] = useState<{ id: Category; label: string }[]>([]);
+  
+  // Fetch categories from Firebase
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const fetchedCategories = await getAllCategories();
+        if (fetchedCategories.length > 0) {
+          const formattedCategories = fetchedCategories.map(category => ({
+            id: category.id,
+            label: category.name
+          }));
+          setCategories(formattedCategories);
+        }
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+        // Fallback to default category
+        setCategories([{ id: 'general', label: 'General' }]);
+      }
+    };
+    
+    fetchCategories();
+  }, []);
   
   // Update URL when search parameters change
   useEffect(() => {

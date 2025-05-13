@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { BookOpen, Bookmark, CheckCircle, Clock, ChevronRight, CheckSquare, BookmarkPlus } from 'lucide-react';
+import { 
+  BookOpen, Bookmark, CheckCircle, Clock, ChevronRight, CheckSquare, BookmarkPlus, ArrowRight,
+  Globe, Settings, File, ShoppingCart, Tag,
+  Code, Coffee, Database, FileQuestion, Heart, Home, Image, Mail, MessageSquare, Music, 
+  Package, Star, User, Video, Zap, Layout, Box, FileText, ShoppingBag
+} from 'lucide-react';
 import { userService } from '../services/userService';
 import { Link } from 'react-router-dom';
 import { articleService } from '../services/articleService';
@@ -13,7 +18,39 @@ import {
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { articleUserService } from '../services/articleUserService';
-import { getArticleBasicInfo } from '../services/articleService';
+import { getArticleBasicInfo, getAllCategories } from '../services/articleService';
+
+// Map of available icons for rendering
+const iconComponents: Record<string, any> = {
+  // Default mappings
+  'wordpress': Layout,
+  'elementor': Box,
+  'gravity-forms': FileText,
+  'shopify': ShoppingBag,
+  'general': ArrowRight,
+  // Icon name to component mappings
+  'tag': Tag,
+  'globe': Globe,
+  'settings': Settings,
+  'file': File,
+  'cart': ShoppingCart,
+  'book': BookOpen,
+  'code': Code,
+  'coffee': Coffee,
+  'database': Database,
+  'fileQuestion': FileQuestion,
+  'heart': Heart,
+  'home': Home,
+  'image': Image,
+  'mail': Mail,
+  'message': MessageSquare,
+  'music': Music,
+  'package': Package,
+  'star': Star,
+  'user': User,
+  'video': Video,
+  'zap': Zap
+};
 
 interface Article {
   id: string;
@@ -34,6 +71,12 @@ interface CategoryProgress {
   percentage: number;
 }
 
+interface CategoryData {
+  id: string;
+  name: string;
+  icon: any;
+}
+
 export function Dashboard() {
   const { user, userProfile } = useAuth();
   const [localUserProfile, setLocalUserProfile] = useState(userProfile);
@@ -44,6 +87,33 @@ export function Dashboard() {
   const [categoryProgress, setCategoryProgress] = useState<CategoryProgress[]>([]);
   const [overallProgress, setOverallProgress] = useState({ completed: 0, total: 0, percentage: 0, totalTimeSpent: 0 });
   const [isLoading, setIsLoading] = useState(true);
+  const [categories, setCategories] = useState<CategoryData[]>([]);
+
+  // Fetch categories from Firebase
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const fetchedCategories = await getAllCategories();
+        if (fetchedCategories.length > 0) {
+          const categoriesWithIcons = fetchedCategories.map(category => {
+            // Get the icon component based on icon name from Firebase
+            const IconComponent = iconComponents[category.icon || 'tag'] || ArrowRight;
+            
+            return {
+              id: category.id,
+              name: category.name,
+              icon: IconComponent // Use the actual component
+            };
+          });
+          setCategories(categoriesWithIcons);
+        }
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+      }
+    };
+    
+    fetchCategories();
+  }, []);
 
   // Get user profile
   useEffect(() => {
@@ -230,60 +300,67 @@ export function Dashboard() {
               </div>
             ) : (
               <>
-              
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {categoryProgress.map((progress) => (
-                    <div 
-                      key={progress.category} 
-                      className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors border border-gray-200 hover:border-blue-300"
-                    >
-                      <div className="flex justify-between items-center mb-2">
-                        <h3 className="font-medium text-gray-900">
-                          {progress.category} Articles
-                          {progress.total === 0 && <span className="text-xs ml-2 text-gray-500">(No articles yet)</span>}
-                        </h3>
-                        <div className="flex items-center">
-                          <span className={`text-sm font-medium ${
-                            progress.percentage >= 80 ? 'text-green-600' : 
-                            progress.percentage >= 40 ? 'text-blue-600' : 
-                            'text-gray-600'
-                          }`}>
-                            {progress.percentage}%
-                          </span>
+                  {categoryProgress.map((progress) => {
+                    // Find the category data with icon
+                    const categoryData = categories.find(cat => cat.id === progress.category);
+                    const CategoryIcon = categoryData?.icon || ArrowRight;
+                    const categoryName = categoryData?.name || progress.category;
+                    
+                    return (
+                      <div 
+                        key={progress.category} 
+                        className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors border border-gray-200 hover:border-blue-300"
+                      >
+                        <div className="flex justify-between items-center mb-2">
+                          <h3 className="font-medium text-gray-900 flex items-center">
+                            <CategoryIcon className="h-5 w-5 text-blue-600 mr-2" />
+                            {categoryName} Articles
+                            {progress.total === 0 && <span className="text-xs ml-2 text-gray-500">(No articles yet)</span>}
+                          </h3>
+                          <div className="flex items-center">
+                            <span className={`text-sm font-medium ${
+                              progress.percentage >= 80 ? 'text-green-600' : 
+                              progress.percentage >= 40 ? 'text-blue-600' : 
+                              'text-gray-600'
+                            }`}>
+                              {progress.percentage}%
+                            </span>
+                          </div>
+                        </div>
+                        
+                        <div className="w-full bg-gray-200 rounded-full h-2.5">
+                          <div 
+                            className={`h-2.5 rounded-full transition-all duration-500 ${
+                              progress.percentage >= 80 ? 'bg-green-500' : 
+                              progress.percentage >= 40 ? 'bg-blue-600' : 
+                              'bg-indigo-400'
+                            }`}
+                            style={{ width: `${progress.percentage}%` }}
+                          />
+                        </div>
+                        
+                        <div className="mt-2 flex justify-between items-center">
+                          <div className="text-sm text-gray-500">
+                            {progress.completed} of {progress.total} articles completed
+                          </div>
+                          {progress.total > 0 && progress.completed < progress.total && (
+                            <Link 
+                              to={`/categories/${progress.category.toLowerCase()}`}
+                              className="text-xs font-medium text-blue-600 hover:text-blue-800"
+                            >
+                              Continue learning
+                            </Link>
+                          )}
+                          {progress.completed === progress.total && progress.total > 0 && (
+                            <span className="text-xs font-medium text-green-600">
+                              Completed! 🎉
+                            </span>
+                          )}
                         </div>
                       </div>
-                      
-                      <div className="w-full bg-gray-200 rounded-full h-2.5">
-                        <div 
-                          className={`h-2.5 rounded-full transition-all duration-500 ${
-                            progress.percentage >= 80 ? 'bg-green-500' : 
-                            progress.percentage >= 40 ? 'bg-blue-600' : 
-                            'bg-indigo-400'
-                          }`}
-                          style={{ width: `${progress.percentage}%` }}
-                        />
-                      </div>
-                      
-                      <div className="mt-2 flex justify-between items-center">
-                        <div className="text-sm text-gray-500">
-                          {progress.completed} of {progress.total} articles completed
-                        </div>
-                        {progress.total > 0 && progress.completed < progress.total && (
-                          <Link 
-                            to={`/categories/${progress.category.toLowerCase()}`}
-                            className="text-xs font-medium text-blue-600 hover:text-blue-800"
-                          >
-                            Continue learning
-                          </Link>
-                        )}
-                        {progress.completed === progress.total && progress.total > 0 && (
-                          <span className="text-xs font-medium text-green-600">
-                            Completed! 🎉
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                   
                   {categoryProgress.length === 0 && (
                     <div className="col-span-2 text-center py-8 text-gray-500">

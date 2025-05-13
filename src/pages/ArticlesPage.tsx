@@ -130,10 +130,10 @@ export function ArticlesPage() {
             {/* Content Section */}
             <div className="p-6">
               {/* Category */}
-              <div className="mb-2">
+              <div className="flex items-center space-x-2 mb-4">
                 <Link
                   to={`/categories/${article.category}`}
-                  className="text-xs font-medium uppercase text-indigo-600 hover:text-indigo-800"
+                  className="px-3 py-1 text-xs font-medium bg-indigo-100 text-indigo-800 rounded-full"
                 >
                   {article.category.charAt(0).toUpperCase() + article.category.slice(1).replace('-', ' ')}
                 </Link>

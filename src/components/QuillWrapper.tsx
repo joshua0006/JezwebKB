@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useRef, useImperativeHandle } from 'react';
-import ReactQuill, { ReactQuillProps } from 'react-quill';
+import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import Quill from 'quill';
 
@@ -9,11 +9,47 @@ export interface QuillWrapperHandle {
   getHTML: () => string;
   setHTML: (html: string) => void;
   focus: () => void;
-  reactQuillRef: React.RefObject<ReactQuill>;
+  ensureSelection: () => void;
 }
 
-const QuillWrapper = forwardRef<QuillWrapperHandle, Omit<ReactQuillProps, 'ref'>>((props, ref) => {
+// Define props interface
+export interface QuillWrapperProps {
+  value: string;
+  onChange: (value: string) => void;
+  onChangeSelection?: (range: any, source: any, editor: any) => void;
+  modules?: any;
+  formats?: string[];
+  placeholder?: string;
+  readOnly?: boolean;
+  theme?: string;
+  className?: string;
+}
+
+const QuillWrapper = forwardRef<QuillWrapperHandle, QuillWrapperProps>((props, ref) => {
   const quillRef = useRef<ReactQuill>(null);
+  
+  // Ensure editor is ready and focused when needed
+  useEffect(() => {
+    const handleFocusEvent = (e: MouseEvent) => {
+      if (quillRef.current && e.target && quillRef.current.getEditor().root.contains(e.target as Node)) {
+        if (quillRef.current) {
+          const editor = quillRef.current.getEditor();
+          // If there's no current selection, set it to the end of the document
+          if (!editor.getSelection()) {
+            const length = editor.getLength();
+            editor.setSelection(length - 1, 0);
+          }
+        }
+      }
+    };
+
+    // Add focus event listener to the document
+    document.addEventListener('click', handleFocusEvent);
+
+    return () => {
+      document.removeEventListener('click', handleFocusEvent);
+    };
+  }, []);
   
   useImperativeHandle(ref, () => ({
     getEditor: () => {
@@ -40,8 +76,24 @@ const QuillWrapper = forwardRef<QuillWrapperHandle, Omit<ReactQuillProps, 'ref'>
         return;
       }
       quillRef.current.focus();
+      
+      // Ensure there's a valid selection after focusing
+      const editor = quillRef.current.getEditor();
+      if (!editor.getSelection()) {
+        const length = editor.getLength();
+        editor.setSelection(length - 1, 0);
+      }
     },
-    reactQuillRef: quillRef
+    ensureSelection: () => {
+      if (!quillRef.current) {
+        return;
+      }
+      const editor = quillRef.current.getEditor();
+      if (!editor.getSelection()) {
+        const length = editor.getLength();
+        editor.setSelection(length - 1, 0);
+      }
+    }
   }), [quillRef.current]);
 
   return <ReactQuill ref={quillRef} {...props} />;

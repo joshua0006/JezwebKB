@@ -511,4 +511,134 @@ export const backfillSlugsForArticles = async () => {
     console.error("Error in backfillSlugsForArticles:", error);
     throw error;
   }
+};
+
+// Add a new category to the system
+export const addCategory = async (categoryName: string, icon: string = 'tag') => {
+  try {
+    // Verify user is authenticated
+    const currentUser = checkAuth();
+    
+    // Generate a slug-like ID for the category (lowercase, hyphenated)
+    const categoryId = categoryName
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .trim();
+    
+    // Check if category already exists
+    const categoriesRef = collection(db, 'categories');
+    const q = query(categoriesRef, where('id', '==', categoryId));
+    const querySnapshot = await getDocs(q);
+    
+    if (!querySnapshot.empty) {
+      throw new Error('Category already exists');
+    }
+    
+    // Add the new category with icon
+    await addDoc(collection(db, 'categories'), {
+      id: categoryId,
+      name: categoryName,
+      icon: icon, // Store the icon name
+      createdAt: serverTimestamp(),
+      createdBy: currentUser.uid
+    });
+    
+    return {
+      id: categoryId,
+      name: categoryName,
+      icon: icon
+    };
+  } catch (error) {
+    console.error("Error in addCategory:", error);
+    throw error;
+  }
+};
+
+// Get all available categories
+export const getAllCategories = async () => {
+  try {
+    const categoriesRef = collection(db, 'categories');
+    const querySnapshot = await getDocs(categoriesRef);
+    
+    return querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: data.id,
+        name: data.name,
+        icon: data.icon || 'tag', // Include the icon with a default fallback
+        docId: doc.id // Include the Firestore document ID for deletion
+      };
+    });
+  } catch (error) {
+    console.error("Error in getAllCategories:", error);
+    throw error;
+  }
+};
+
+// Delete a category from the system
+export const deleteCategory = async (docId: string) => {
+  try {
+    // Verify user is authenticated
+    const currentUser = checkAuth();
+    
+    // Delete the category document
+    const categoryRef = doc(db, 'categories', docId);
+    await deleteDoc(categoryRef);
+    
+    return { success: true };
+  } catch (error) {
+    console.error("Error in deleteCategory:", error);
+    throw error;
+  }
+};
+
+// Seed initial categories if they don't exist
+export const seedInitialCategories = async () => {
+  try {
+    // Verify user is authenticated
+    const currentUser = checkAuth();
+    
+    // Get existing categories
+    const categoriesRef = collection(db, 'categories');
+    const querySnapshot = await getDocs(categoriesRef);
+    
+    // If there are already categories, don't seed
+    if (!querySnapshot.empty) {
+      console.log('Categories already exist, skipping seeding');
+      return { success: true, message: 'Categories already exist' };
+    }
+    
+    // Default categories to seed with icons
+    const defaultCategories = [
+      { id: 'wordpress', name: 'WordPress', icon: 'globe' },
+      { id: 'elementor', name: 'Elementor', icon: 'settings' },
+      { id: 'gravity-forms', name: 'Gravity Forms', icon: 'file' },
+      { id: 'shopify', name: 'Shopify', icon: 'cart' },
+      { id: 'general', name: 'General', icon: 'tag' }
+    ];
+    
+    // Add each category
+    const addedCategories = [];
+    for (const category of defaultCategories) {
+      const docRef = await addDoc(collection(db, 'categories'), {
+        id: category.id,
+        name: category.name,
+        icon: category.icon,
+        createdAt: serverTimestamp(),
+        createdBy: currentUser.uid
+      });
+      addedCategories.push({ ...category, docId: docRef.id });
+    }
+    
+    return { 
+      success: true, 
+      message: `Added ${addedCategories.length} initial categories`,
+      categories: addedCategories
+    };
+  } catch (error) {
+    console.error("Error in seedInitialCategories:", error);
+    throw error;
+  }
 }; 

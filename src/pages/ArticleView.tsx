@@ -11,6 +11,14 @@ import { ErrorBoundary } from '../components/ErrorBoundary';
 import { useAuth } from '../context/AuthContext';
 import { articleUserService } from '../services/articleUserService';
 
+// HeaderMedia type definition
+interface HeaderMedia {
+  url: string;
+  type: 'image' | 'video';
+  caption?: string;
+  fileName?: string;
+}
+
 // Article type definition
 interface Article {
   id: string;
@@ -29,9 +37,79 @@ interface Article {
   publicationDate?: string;
   additionalImages?: string[];
   videos?: string[];
+  headerMedia?: HeaderMedia | null;
 }
 
 // Remove duplicate type guard and utility functions since we're now importing them
+
+// Browser detection for video compatibility
+const getBrowserInfo = () => {
+  const userAgent = navigator.userAgent;
+  let browser = '';
+  let version = '';
+  
+  // Safari
+  if (userAgent.indexOf('Safari') !== -1 && userAgent.indexOf('Chrome') === -1) {
+    browser = 'safari';
+    version = userAgent.match(/Version\/([\d.]+)/)?.[1] || '';
+  }
+  // Edge
+  else if (userAgent.indexOf('Edg') !== -1) {
+    browser = 'edge';
+    version = userAgent.match(/Edg\/([\d.]+)/)?.[1] || '';
+  }
+  // Chrome
+  else if (userAgent.indexOf('Chrome') !== -1) {
+    browser = 'chrome';
+    version = userAgent.match(/Chrome\/([\d.]+)/)?.[1] || '';
+  }
+  // Firefox
+  else if (userAgent.indexOf('Firefox') !== -1) {
+    browser = 'firefox';
+    version = userAgent.match(/Firefox\/([\d.]+)/)?.[1] || '';
+  }
+  // IE
+  else if (userAgent.indexOf('MSIE') !== -1 || userAgent.indexOf('Trident/') !== -1) {
+    browser = 'ie';
+    version = userAgent.match(/(?:MSIE |rv:)([\d.]+)/)?.[1] || '';
+  }
+  
+  return { browser, version };
+};
+
+// Get appropriate video format based on browser
+const getVideoFormat = (browser: string) => {
+  switch(browser) {
+    case 'safari':
+      return 'video/mp4';
+    case 'firefox':
+      return 'video/webm';
+    default:
+      return 'video/mp4'; // Default to MP4 for most browsers
+  }
+};
+
+// Check if a video format is supported by the browser
+const isVideoFormatSupported = (format: string): boolean => {
+  // Create a video element to test compatibility
+  const video = document.createElement('video');
+  
+  // Check if the browser can likely play this type
+  return video.canPlayType(format) !== '';
+};
+
+// Get an array of supported video formats for the current browser
+const getSupportedVideoFormats = (): string[] => {
+  const formats = [
+    'video/mp4',
+    'video/webm',
+    'video/ogg',
+    'video/x-m4v',
+    'video/quicktime'
+  ];
+  
+  return formats.filter(format => isVideoFormatSupported(format));
+};
 
 export function ArticleView() {
   const { slug } = useParams<{ slug: string }>();
@@ -47,7 +125,13 @@ export function ArticleView() {
   const [loadingComplete, setLoadingComplete] = useState(false);
   const [mediaError, setMediaError] = useState(false);
   const [isVideo, setIsVideo] = useState(false);
+  const [browserInfo, setBrowserInfo] = useState<{ browser: string; version: string }>({ browser: '', version: '' });
   const fallbackImage = '/images/jezweb.webp';
+
+  // Detect browser on component mount
+  useEffect(() => {
+    setBrowserInfo(getBrowserInfo());
+  }, []);
 
   const handleMediaError = () => {
     setMediaError(true);
@@ -144,7 +228,8 @@ export function ArticleView() {
           author: rawData.author || '',
           publicationDate: rawData.publicationDate || '',
           additionalImages: Array.isArray(rawData.additionalImages) ? rawData.additionalImages : [],
-          videos: Array.isArray(rawData.videos) ? rawData.videos : []
+          videos: Array.isArray(rawData.videos) ? rawData.videos : [],
+          headerMedia: rawData.headerMedia || null
         } as Article;
         
         // Check if the featured media is a video
@@ -330,7 +415,7 @@ export function ArticleView() {
           {/* Article Content */}
           <div className="p-6 md:p-8 pt-0 md:pt-0 border-t border-gray-100">
             {processedContent ? (
-              <ArticleContent content={processedContent} />
+              <ArticleContent content={processedContent} headerMedia={article.headerMedia} />
             ) : (
               <p className="text-gray-500 italic">No content available</p>
             )}
@@ -364,35 +449,68 @@ export function ArticleView() {
               <div className="mt-8 border-t border-gray-100 pt-6">
                 <h3 className="text-xl font-semibold mb-4">Videos</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {article.videos.map((videoUrl, index) => (
-                    <div key={`video-${index}`} className="relative rounded-lg overflow-hidden">
-                      <div className="relative pb-[56.25%] h-0 overflow-hidden">
-                        <video 
-                          src={videoUrl} 
-                          controls
-                          className="absolute top-0 left-0 w-full h-full object-cover rounded-lg" 
-                          poster={fallbackImage}
-                          onError={(e) => {
-                            console.error('Video failed to load:', videoUrl);
-                            const target = e.target as HTMLVideoElement;
-                            target.onerror = null;
-                            // Add placeholder or error message
-                            const parent = target.parentElement;
-                            if (parent) {
-                              parent.innerHTML = `<div class="flex items-center justify-center h-full min-h-[200px] bg-gray-100 text-gray-500 absolute top-0 left-0 w-full rounded-lg">
-                                <div class="text-center p-4">
-                                  <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                                  </svg>
-                                  <p>Video unavailable</p>
-                                </div>
-                              </div>`;
-                            }
-                          }}
-                        />
+                  {article.videos.map((videoUrl, index) => {
+                    // Get supported formats and preferred format
+                    const supportedFormats = getSupportedVideoFormats();
+                    const preferredFormat = getVideoFormat(browserInfo.browser);
+                    
+                    return (
+                      <div key={`video-${index}`} className="relative rounded-lg overflow-hidden">
+                        <div className="relative pb-[56.25%] h-0 overflow-hidden">
+                          <video 
+                            className="absolute top-0 left-0 w-full h-full object-cover rounded-lg quill-video" 
+                            poster={fallbackImage}
+                            controls
+                            preload="metadata"
+                            playsInline
+                            onLoadedData={(e) => {
+                              // Add loaded class when video is loaded successfully
+                              const target = e.target as HTMLVideoElement;
+                              target.classList.add('video-loaded');
+                            }}
+                            onError={(e) => {
+                              console.error('Video failed to load:', videoUrl);
+                              const target = e.target as HTMLVideoElement;
+                              target.onerror = null;
+                              // Add placeholder or error message
+                              const parent = target.parentElement;
+                              if (parent) {
+                                parent.innerHTML = `<div class="flex items-center justify-center h-full min-h-[200px] bg-gray-100 text-gray-500 absolute top-0 left-0 w-full rounded-lg">
+                                  <div class="text-center p-4">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                    </svg>
+                                    <p>Video unavailable</p>
+                                  </div>
+                                </div>`;
+                              }
+                            }}
+                          >
+                            {/* Primary source with preferred format */}
+                            <source src={videoUrl} type={preferredFormat} />
+                            
+                            {/* Additional sources for better browser compatibility */}
+                            {supportedFormats.map((format, i) => (
+                              <source key={`source-${i}`} src={videoUrl} type={format} />
+                            ))}
+                            
+                            {/* Fallback text that will only show if the video element is not supported */}
+                            <div className="p-4 bg-gray-100 text-gray-500 flex items-center justify-center min-h-[200px]">
+                              <div className="text-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="w-12 h-12 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                </svg>
+                                <p>Your browser doesn't support HTML5 video.</p>
+                                <a href={videoUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline mt-2 inline-block">
+                                  View video in new tab
+                                </a>
+                              </div>
+                            </div>
+                          </video>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}

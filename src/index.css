@@ -121,31 +121,195 @@
   border: 0;
 }
 
-/* Media containers */
-.media-container {
+/* Enhanced Video Styles for Cross-Browser Compatibility */
+.video-wrapper {
+  max-width: 100%;
   margin: 1.5rem 0;
+}
+
+/* Core video container styles */
+figure.media-container {
+  margin: 1.5rem 0;
+  position: relative;
   max-width: 100%;
 }
 
-.media-container.align-center {
+/* Video player styles with fallbacks */
+video.quill-video {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  background-color: #000;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  display: block;
+  opacity: 0.8;
+  transition: opacity 0.3s ease-in-out;
+}
+
+video.quill-video.video-loaded {
+  opacity: 1;
+}
+
+/* Hide fallback content inside video when video is supported */
+video.quill-video > *:not(source) {
+  display: none;
+}
+
+/* Show fallback content when video is not supported */
+video:not([controls]) > *:not(source) {
+  display: block;
+}
+
+/* Size variations */
+.quill-video.size-small {
+  max-width: 25%;
+  margin: 0 auto;
+}
+
+.quill-video.size-medium {
+  max-width: 50%;
+  margin: 0 auto;
+}
+
+.quill-video.size-large {
+  max-width: 75%;
+  margin: 0 auto;
+}
+
+.quill-video.size-full {
+  width: 100%;
+}
+
+/* Alignment classes */
+.align-left {
+  text-align: left;
+  margin-right: auto;
+}
+
+.align-center {
   text-align: center;
   margin-left: auto;
   margin-right: auto;
 }
 
-.media-container.align-left {
-  text-align: left;
-}
-
-.media-container.align-right {
+.align-right {
   text-align: right;
   margin-left: auto;
 }
 
-/* Media caption */
+/* Video fallback styles - only displays when JS removes the controls attribute on error */
+.video-fallback {
+  display: none;
+  text-align: center;
+  padding: 1rem;
+  background-color: #f3f4f6;
+  border-radius: 0.5rem;
+  border: 1px dashed #d1d5db;
+}
+
+video:not([controls]) .video-fallback {
+  display: block;
+}
+
+/* Error state styling */
+.video-error {
+  min-height: 200px;
+  background-color: #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  border: 1px dashed #d1d5db;
+  color: #6b7280;
+}
+
+/* Caption styles */
 .media-caption {
+  margin-top: 0.5rem;
   font-style: italic;
   color: #6b7280;
-  margin-top: 0.5rem;
   font-size: 0.875rem;
+  text-align: center;
+}
+
+/* Browser-specific fixes */
+/* Firefox */
+@-moz-document url-prefix() {
+  video.quill-video {
+    width: 100%;
+    height: auto;
+  }
+}
+
+/* Safari */
+@media not all and (min-resolution:.001dpcm) {
+  @supports (-webkit-appearance:none) {
+    video.quill-video {
+      width: 100%;
+      height: auto;
+    }
+  }
+}
+
+/* Video controls custom styling for better visibility */
+video.quill-video::-webkit-media-controls {
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 0 0 0.5rem 0.5rem;
+}
+
+video.quill-video::-webkit-media-controls-panel {
+  padding: 0 0.5rem;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 640px) {
+  .quill-video.size-small,
+  .quill-video.size-medium,
+  .quill-video.size-large {
+    max-width: 100%;
+  }
+}
+
+/* Video loading placeholder */
+.video-loading {
+  background-color: #f3f4f6;
+  position: relative;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.video-loading::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -200%;
+  width: 200%;
+  height: 100%;
+  background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: video-loading 1.5s infinite linear;
+}
+
+@keyframes video-loading {
+  0% {
+    left: -200%;
+  }
+  100% {
+    left: 200%;
+  }
+}
+
+/* Specific browser tweaks */
+/* Mobile devices */
+@media (max-width: 767px) {
+  /* Force controls to be visible on mobile */
+  video.quill-video::-webkit-media-controls-panel {
+    display: flex !important;
+    opacity: 1 !important;
+  }
+  
+  /* Fix iOS video sizing */
+  video.quill-video {
+    width: 100%;
+    height: auto;
+  }
 }

@@ -21,7 +21,7 @@ export interface Article {
   vipUsers?: string[]; // Array of VIP user IDs who can access this tutorial
 }
 
-export type Category = 'wordpress' | 'elementor' | 'gravity-forms' | 'shopify' | 'general';
+export type Category = string;
 
 export interface User {
   id: string;
@@ -44,5 +44,3 @@ export interface UserProfile {
   displayName: string;
   role: 'admin' | 'user';
 }
-
-export interface TutorialBlock {

@@ -1,17 +1,14 @@
-import { useState, useEffect, FormEvent, useRef } from 'react';
+import React, { useState, useEffect, FormEvent, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArticleFormData } from '../types/article';
 import { Category } from '../types/index';
 import { useAuth } from '../context/AuthContext';
-import { createArticle, getArticleById, updateArticle } from '../services/articleService';
+import { createArticle, getArticleById, updateArticle, getAllCategories } from '../services/articleService';
 import { Spinner } from './Spinner';
-import { X, Plus, Save, ArrowLeft, Bold, Italic, Underline, ListOrdered, List, Link as LinkIcon, Type, ExternalLink, AlertTriangle, Upload, Image, Calendar, User, Film, Eye } from 'lucide-react';
+import { X, Plus, Save, ArrowLeft, AlertTriangle, Upload, Image, Calendar, User, Film, Eye } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { auth } from '../config/firebase';
 import { uploadImage, uploadVideo } from '../services/storageService';
-import DirectQuill, { DirectQuillHandle } from './DirectQuill';
-import 'quill/dist/quill.snow.css';
-import { registerCustomBlots, toolbarOptions, insertImage, insertVideo, initializeStyles } from './QuillConfig';
 
 // Custom preview styles
 const previewStyles = `
@@ -151,13 +148,6 @@ const initialFormData: ArticleFormData = {
   videos: [],
 };
 
-const categories: { value: Category; label: string }[] = [
-  { value: 'wordpress', label: 'WordPress' },
-  { value: 'elementor', label: 'Elementor' },
-  { value: 'gravity-forms', label: 'Gravity Forms' },
-  { value: 'shopify', label: 'Shopify' },
-];
-
 // Utility function to safely decode HTML content before inserting into editor
 const decodeHtmlEntities = (html: string): string => {
   if (!html) return '';
@@ -242,13 +232,9 @@ export function ArticleForm() {
   const [newTag, setNewTag] = useState<string>('');
   const [showPreview, setShowPreview] = useState(false);
   
-  // Quill editor reference
-  const quillRef = useRef<DirectQuillHandle>(null);
-  
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
   const [statusMessage, setStatusMessage] = useState<string>('');
   
-  // Media insertion modal state
   const [mediaModalOpen, setMediaModalOpen] = useState(false);
   const [mediaType, setMediaType] = useState<'image' | 'video'>('image');
   const [mediaUrl, setMediaUrl] = useState('');
@@ -256,14 +242,10 @@ export function ArticleForm() {
   const [mediaSize, setMediaSize] = useState<'small' | 'medium' | 'large' | 'full'>('medium');
   const [mediaAlignment, setMediaAlignment] = useState<'left' | 'center' | 'right'>('center');
   
-  // Use a state variable to track when content is ready to be rendered
-  const [contentToRender, setContentToRender] = useState<string | null>(null);
-  
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  // Add new state variables for additional features
   const [additionalImagesUploading, setAdditionalImagesUploading] = useState<boolean[]>([]);
   const [additionalImagesProgress, setAdditionalImagesProgress] = useState<number[]>([]);
   const additionalImagesInputRef = useRef<HTMLInputElement>(null);
@@ -272,8 +254,13 @@ export function ArticleForm() {
   const [videosProgress, setVideosProgress] = useState<number[]>([]);
   const videosInputRef = useRef<HTMLInputElement>(null);
   
-  // Add state for media type selection
   const [featuredMediaType, setFeaturedMediaType] = useState<'image' | 'video'>('image');
+  
+  // Add state for categories
+  const [categories, setCategories] = useState<{ value: string; label: string }[]>([
+    { value: 'general', label: 'General' } // Default fallback
+  ]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
   
 // Function to handle save status message display
 const displayErrorMessage = (message: string) => {
@@ -531,33 +518,12 @@ const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     }
   };
   
-  // Initialize Quill custom blots and CSS
-  useEffect(() => {
-    registerCustomBlots();
-    initializeStyles();
-    
-    // Add preview styles
-    const styleElement = document.createElement('style');
-    styleElement.id = 'article-preview-styles';
-    styleElement.textContent = previewStyles;
-    document.head.appendChild(styleElement);
-    
-    // Clean up on unmount
-    return () => {
-      const existingStyle = document.getElementById('article-preview-styles');
-      if (existingStyle) {
-        existingStyle.remove();
-      }
-    };
-  }, []);
-  
   useEffect(() => {
     const fetchArticle = async () => {
       if (isEditing && id) {
         try {
           setLoading(true);
           const article = await getArticleById(id);
-          logContentDebug('Fetched', article.content);
           
           // Store the content in state
           setFormData({
@@ -585,6 +551,32 @@ const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     fetchArticle();
   }, [id, isEditing]);
   
+  // Add effect to fetch categories
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setLoadingCategories(true);
+        const categoriesData = await getAllCategories();
+        
+        if (categoriesData.length > 0) {
+          // Map categories to format expected by select dropdown
+          const formattedCategories = categoriesData.map(category => ({
+            value: category.id,
+            label: category.name
+          }));
+          setCategories(formattedCategories);
+        }
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+        // Keep the default "General" category as fallback
+      } finally {
+        setLoadingCategories(false);
+      }
+    };
+    
+    fetchCategories();
+  }, []);
+  
   // Ensure user is authenticated and check if they're an admin
   useEffect(() => {
     const checkAuthStatus = () => {
@@ -609,14 +601,14 @@ const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     // This is kept as a placeholder for the onChangeSelection event
   };
 
-  // Handle content change in Quill editor
-  const handleEditorChange = (content: string) => {
+  // Handle content change directly
+  const handleContentChange = (content: string) => {
     setFormData(prev => ({
       ...prev,
       content
     }));
     
-    // Clear error when field is edited
+    // Clear error when content is edited
     if (errors.content) {
       setErrors(prev => ({ ...prev, content: undefined }));
     }
@@ -672,15 +664,7 @@ const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
       newErrors.title = 'Title is required';
     }
     
-    // Get the latest content from the editor for validation
-    let editorContent = formData.content;
-    if (quillRef.current) {
-      editorContent = quillRef.current.getHTML();
-    }
-    
-    if (!editorContent.trim() || editorContent === '<p><br></p>') {
-      newErrors.content = 'Content is required';
-    }
+    // Content validation removed
     
     if (!formData.author.trim()) {
       newErrors.author = 'Author is required';
@@ -703,24 +687,7 @@ const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
       return;
     }
     
-    // Get the latest content from the editor
-    let editorContent = formData.content;
-    if (quillRef.current) {
-      // Capture the raw HTML content
-      editorContent = quillRef.current.getHTML() || '<p>No content</p>';
-      
-      // Clean up any empty paragraphs that might have been created
-      editorContent = editorContent.replace(/<p><\/p>/g, '<p>&nbsp;</p>');
-      
-      // Log the content being saved for debugging
-      logContentDebug('Saving', editorContent);
-      
-      // Update formData with the latest content
-      setFormData(prev => ({
-        ...prev,
-        content: editorContent
-      }));
-    }
+    // Get content from Quill editor removed
     
     if (!validateForm()) {
       return;
@@ -741,11 +708,8 @@ const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
       setSaving(true);
       setSaveStatus('saving');
       
-      // Use the latest editorContent (not formData.content) to ensure we use the most recent content
-      // without having to wait for the state update
       const articleData = {
         ...formData,
-        content: editorContent, // Use the cleaned HTML content directly
         published: publish,
         // Ensure all required fields are present
         title: formData.title.trim() || 'Untitled',
@@ -786,115 +750,29 @@ const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
   // Handle form submission
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    
-    // Ensure we get the latest content from the Quill editor
-    if (quillRef.current) {
-      const content = quillRef.current.getHTML();
-      setFormData(prev => ({
-        ...prev,
-        content
-      }));
-    }
-    
     await saveArticle(formData.published);
   };
   
   // Publish article
   const publishArticle = async () => {
-    // Ensure we get the latest content from the Quill editor
-    if (quillRef.current) {
-      const content = quillRef.current.getHTML();
-      setFormData(prev => ({
-        ...prev,
-        content
-      }));
-    }
-    
     await saveArticle(true);
   };
   
   // Save as draft
   const saveAsDraft = async () => {
-    // Ensure we get the latest content from the Quill editor
-    if (quillRef.current) {
-      const content = quillRef.current.getHTML();
-      setFormData(prev => ({
-        ...prev,
-        content
-      }));
-    }
-    
     await saveArticle(false);
   };
   
-  // Insert image with caption into the editor
-  const handleInsertImage = (url: string, caption: string, size: string, alignment: string) => {
-    if (quillRef.current) {
-      const editor = quillRef.current.getEditor();
-      insertImage(editor, url, caption, size, alignment);
-    }
-  };
+  // Insert image with caption into the editor - removed
   
-  // Insert video with caption into the editor
-  const handleInsertVideo = (url: string, caption: string, size: string, alignment: string) => {
-    if (quillRef.current) {
-      const editor = quillRef.current.getEditor();
-      insertVideo(editor, url, caption, size, alignment);
-    }
-  };
+  // Insert video with caption into the editor - removed
   
-  // Insert media into editor
-  const insertMediaToEditor = () => {
-    if (!quillRef.current || !mediaUrl) return;
-    
-    if (mediaType === 'image') {
-      insertImage(
-        quillRef.current.getEditor(),
-        mediaUrl,
-        mediaCaption,
-        mediaSize,
-        mediaAlignment
-      );
-    } else {
-      insertVideo(
-        quillRef.current.getEditor(),
-        mediaUrl,
-        mediaCaption,
-        mediaSize,
-        mediaAlignment
-      );
-    }
-    
-    // Reset modal and close
-    setMediaUrl('');
-    setMediaCaption('');
-    setMediaModalOpen(false);
-  };
+  // Insert media into editor - removed
   
-  // Add this useEffect to sync content from editor to preview
-  useEffect(() => {
-    if (showPreview && quillRef.current) {
-      // Get the latest content from editor for preview
-      const latestContent = quillRef.current.getHTML();
-      
-      // Update the form data with latest content to ensure preview is accurate
-      setFormData(prev => ({
-        ...prev,
-        content: latestContent
-      }));
-    }
-  }, [showPreview]);
+  // Sync content from editor to preview - removed
   
   // Enhance the preview toggle button to update content first
   const togglePreview = () => {
-    // If switching to preview, make sure we capture the latest content
-    if (!showPreview && quillRef.current) {
-      const latestContent = quillRef.current.getHTML();
-      setFormData(prev => ({
-        ...prev,
-        content: latestContent
-      }));
-    }
     setShowPreview(!showPreview);
   };
   
@@ -1054,7 +932,7 @@ const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
                 prose-pre:bg-gray-50 prose-pre:border prose-pre:border-gray-200
                 prose-blockquote:border-l-4 prose-blockquote:border-indigo-500 prose-blockquote:bg-indigo-50 
                 prose-blockquote:px-4 prose-blockquote:py-1 prose-blockquote:font-normal"
-              dangerouslySetInnerHTML={{ __html: formData.content }}
+              dangerouslySetInnerHTML={{ __html: formData.content || '<p>No content to preview yet.</p>' }}
             />
             
             {/* Tags */}
@@ -1207,13 +1085,24 @@ const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
               value={formData.category}
               onChange={handleInputChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              disabled={loadingCategories}
             >
-              {categories.map(category => (
-                <option key={category.value} value={category.value}>
-                  {category.label}
-                </option>
-              ))}
+              {loadingCategories ? (
+                <option value="">Loading categories...</option>
+              ) : (
+                categories.map(category => (
+                  <option key={category.value} value={category.value}>
+                    {category.label}
+                  </option>
+                ))
+              )}
             </select>
+            {loadingCategories && (
+              <div className="mt-1 flex items-center">
+                <Spinner className="w-4 h-4 text-indigo-500 mr-2" />
+                <span className="text-xs text-gray-500">Loading categories...</span>
+              </div>
+            )}
           </div>
           
           <div>
@@ -1221,47 +1110,8 @@ const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
               Content*
             </label>
             
-            <div className={`${errors.content ? 'border border-red-500 rounded-lg' : ''}`}>
-              <DirectQuill
-                ref={quillRef}
-                theme="snow"
-                value={formData.content}
-                modules={{
-                  toolbar: {
-                    container: [
-                      [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-                      ['bold', 'italic', 'underline', 'strike'],
-                      [{ 'list': 'ordered' }, { 'list': 'bullet' }],
-                      [{ 'indent': '-1' }, { 'indent': '+1' }],
-                      [{ 'size': ['small', false, 'large', 'huge'] }],
-                      [{ 'align': [] }],
-                      ['link', 'image', 'video'],
-                      ['clean']
-                    ],
-                    handlers: {
-                      image: function() {
-                        setMediaType('image');
-                        setMediaModalOpen(true);
-                      },
-                      video: function() {
-                        setMediaType('video');
-                        setMediaModalOpen(true);
-                      }
-                    }
-                  }
-                }}
-                formats={[
-                  'header',
-                  'bold', 'italic', 'underline', 'strike',
-                  'list', 'bullet', 'ordered', 'indent',
-                  'size', 'align',
-                  'link', 'image', 'video',
-                  'clean'
-                ]}
-                onChange={handleEditorChange}
-                onChangeSelection={checkActiveFormats}
-                className="min-h-[300px]"
-              />
+            <div className="min-h-[300px] border border-gray-300 rounded-lg p-4">
+              <p className="text-gray-500 italic">Content editor will be implemented here</p>
             </div>
             
             {errors.content && (
@@ -1269,7 +1119,7 @@ const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
             )}
             
             <p className="mt-2 text-xs text-gray-500">
-              Use the toolbar to format text and add media to your article.
+              Content editor is being replaced with a new implementation.
             </p>
           </div>
           
@@ -1390,112 +1240,6 @@ const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
             </div>
           </div>
         </form>
-      )}
-      
-      {/* Media Insertion Modal */}
-      {mediaModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">
-                Insert {mediaType === 'image' ? 'Image' : 'Video'}
-              </h3>
-              <button 
-                type="button" 
-                onClick={() => setMediaModalOpen(false)}
-                className="text-gray-400 hover:text-gray-500"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="media-url" className="block text-sm font-medium text-gray-700 mb-1">
-                  URL
-                </label>
-                <input
-                  type="text"
-                  id="media-url"
-                  value={mediaUrl}
-                  onChange={(e) => setMediaUrl(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder={`Enter ${mediaType} URL`}
-                />
-              </div>
-              
-              <div>
-                <label htmlFor="media-caption" className="block text-sm font-medium text-gray-700 mb-1">
-                  Caption (optional)
-                </label>
-                <input
-                  type="text"
-                  id="media-caption"
-                  value={mediaCaption}
-                  onChange={(e) => setMediaCaption(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="Enter caption"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Size
-                </label>
-                <div className="flex space-x-4">
-                  {(['small', 'medium', 'large', 'full'] as const).map((size) => (
-                    <label key={size} className="inline-flex items-center">
-                      <input
-                        type="radio"
-                        className="form-radio h-4 w-4 text-indigo-600"
-                        checked={mediaSize === size}
-                        onChange={() => setMediaSize(size)}
-                      />
-                      <span className="ml-2 capitalize">{size}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Alignment
-                </label>
-                <div className="flex space-x-4">
-                  {(['left', 'center', 'right'] as const).map((alignment) => (
-                    <label key={alignment} className="inline-flex items-center">
-                      <input
-                        type="radio"
-                        className="form-radio h-4 w-4 text-indigo-600"
-                        checked={mediaAlignment === alignment}
-                        onChange={() => setMediaAlignment(alignment)}
-                      />
-                      <span className="ml-2 capitalize">{alignment}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-              
-              <div className="flex justify-end space-x-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setMediaModalOpen(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={insertMediaToEditor}
-                  disabled={!mediaUrl}
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-indigo-300"
-                >
-                  Insert
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
       )}
     </div>
   );

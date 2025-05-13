@@ -13,6 +13,14 @@ export interface Article {
   createdBy: string;
   blocks?: TutorialBlock[];
   slug?: string;
+  headerMedia?: HeaderMedia | null;
+}
+
+export interface HeaderMedia {
+  url: string;
+  type: 'image' | 'video';
+  caption?: string;
+  fileName?: string;
 }
 
 export interface ArticleFormData {
@@ -26,11 +34,12 @@ export interface ArticleFormData {
   publicationDate: string;
   additionalImages: string[];
   videos: string[];
+  headerMedia?: HeaderMedia | null;
 }
 
 export interface Article extends ArticleFormData {
   id: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
   createdBy: string;
 } 

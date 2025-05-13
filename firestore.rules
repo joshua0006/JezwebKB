@@ -49,5 +49,16 @@ service cloud.firestore {
       allow update, delete: if request.auth != null && 
                             request.auth.uid == resource.data.userId;
     }
+    
+    // Categories collection - allow admin users to manage
+    match /categories/{categoryId} {
+      // Anyone can read categories
+      allow read: if true;
+      
+      // Only admin users can create, update, or delete categories
+      allow create, update, delete: if request.auth != null && 
+                                     exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+                                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
   }
 }

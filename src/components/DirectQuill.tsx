@@ -45,6 +45,9 @@ const DirectQuill = forwardRef<DirectQuillHandle, DirectQuillProps>((props, ref)
   useEffect(() => {
     if (!containerRef.current) return;
     
+    // Ensure the container is ready for Quill
+    containerRef.current.innerHTML = '';
+    
     const options = {
       modules: modules || {
         toolbar: [
@@ -59,7 +62,12 @@ const DirectQuill = forwardRef<DirectQuillHandle, DirectQuillProps>((props, ref)
       placeholder: placeholder || 'Write something...',
       readOnly,
       theme,
-      formats: formats || undefined,
+      formats: formats || [
+        'header',
+        'bold', 'italic', 'underline', 'strike',
+        'list', 'indent',
+        'link', 'image'
+      ],
     };
     
     // Initialize Quill with options

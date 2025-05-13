@@ -1,27 +1,38 @@
 import { Link } from 'react-router-dom';
 import { ChevronRight, Home } from 'lucide-react';
 import { useBreadcrumbs } from '../context/BreadcrumbContext';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 
 export function Breadcrumbs() {
   const { breadcrumbs, previousBreadcrumbs, isLoading } = useBreadcrumbs();
   const [progressWidth, setProgressWidth] = useState(0);
   
-  // Determine which breadcrumbs to display based on loading state
-  const displayBreadcrumbs = isLoading ? previousBreadcrumbs : breadcrumbs;
+  // Memoize which breadcrumbs to display based on loading state
+  const displayBreadcrumbs = useMemo(() => 
+    isLoading ? previousBreadcrumbs : breadcrumbs,
+  [isLoading, previousBreadcrumbs, breadcrumbs]);
+  
+  // Memoized progress bar animation function
+  const animateProgress = useCallback((timestamp: number, startTime: number, duration: number) => {
+    const elapsedTime = timestamp - startTime;
+    const progress = Math.min(elapsedTime / duration, 1);
+    
+    setProgressWidth(progress * 100);
+    
+    return progress;
+  }, []);
   
   // Progress bar animation
   useEffect(() => {
+    if (!isLoading && progressWidth === 0) return;
+    
     let animationFrame: number;
     let startTime: number;
     const duration = 1000; // Duration in ms, matching the LOADING_TIMEOUT
 
     const animate = (timestamp: number) => {
       if (!startTime) startTime = timestamp;
-      const elapsedTime = timestamp - startTime;
-      const progress = Math.min(elapsedTime / duration, 1);
-      
-      setProgressWidth(progress * 100);
+      const progress = animateProgress(timestamp, startTime, duration);
       
       if (progress < 1 && isLoading) {
         animationFrame = requestAnimationFrame(animate);
@@ -44,10 +55,10 @@ export function Breadcrumbs() {
         cancelAnimationFrame(animationFrame);
       }
     };
-  }, [isLoading]);
+  }, [isLoading, animateProgress, progressWidth]);
 
-  // Create skeleton breadcrumbs for loading state when no previous breadcrumbs
-  const renderSkeletonBreadcrumbs = () => {
+  // Memoized skeleton breadcrumbs for loading state
+  const skeletonBreadcrumbs = useMemo(() => {
     if (!isLoading) return null;
     
     // Use previous breadcrumbs as a template if available
@@ -69,7 +80,55 @@ export function Breadcrumbs() {
         />
       </div>
     ));
-  };
+  }, [isLoading, previousBreadcrumbs]);
+
+  // Memoized progress bar component
+  const ProgressBar = useMemo(() => {
+    if (!isLoading && progressWidth === 0) return null;
+    
+    return (
+      <div 
+        className="absolute top-0 left-0 w-full h-0.5 bg-gray-200 overflow-hidden"
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={progressWidth}
+      >
+        <div 
+          className="h-full bg-indigo-600 transition-all duration-200 ease-out"
+          style={{ width: `${progressWidth}%` }}
+        />
+      </div>
+    );
+  }, [isLoading, progressWidth]);
+  
+  // Memoized breadcrumb items
+  const BreadcrumbItems = useMemo(() => {
+    return displayBreadcrumbs.map((item, index) => (
+      <div 
+        key={index} 
+        className={`flex items-center transition-opacity duration-300 ${isLoading ? 'opacity-60' : 'opacity-100'}`}
+      >
+        <ChevronRight className="h-4 w-4 mx-2" aria-hidden="true" />
+        {item.path ? (
+          <Link 
+            to={item.path}
+            className="hover:text-indigo-600 transition-colors"
+            tabIndex={isLoading ? -1 : 0}
+          >
+            {item.label}
+          </Link>
+        ) : (
+          <span 
+            className="text-gray-900 font-medium" 
+            aria-current={!isLoading ? "page" : undefined}
+          >
+            {item.label}
+          </span>
+        )}
+      </div>
+    ));
+  }, [displayBreadcrumbs, isLoading]);
 
   // If there are no breadcrumbs to show, don't render anything
   if (!displayBreadcrumbs.length && !isLoading) {
@@ -79,20 +138,7 @@ export function Breadcrumbs() {
   return (
     <div className="relative">
       {/* Progress Bar */}
-      {isLoading || progressWidth > 0 ? (
-        <div 
-          className="absolute top-0 left-0 w-full h-0.5 bg-gray-200 overflow-hidden"
-          role="progressbar"
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={progressWidth}
-        >
-          <div 
-            className="h-full bg-indigo-600 transition-all duration-200 ease-out"
-            style={{ width: `${progressWidth}%` }}
-          />
-        </div>
-      ) : null}
+      {ProgressBar}
       
       <nav 
         className="flex items-center space-x-2 text-sm text-gray-500 mb-8 min-h-[32px] pt-2" 
@@ -112,33 +158,10 @@ export function Breadcrumbs() {
         </div>
         
         {/* Existing breadcrumbs with transition */}
-        {displayBreadcrumbs.map((item, index) => (
-          <div 
-            key={index} 
-            className={`flex items-center transition-opacity duration-300 ${isLoading ? 'opacity-60' : 'opacity-100'}`}
-          >
-            <ChevronRight className="h-4 w-4 mx-2" aria-hidden="true" />
-            {item.path ? (
-              <Link 
-                to={item.path}
-                className="hover:text-indigo-600 transition-colors"
-                tabIndex={isLoading ? -1 : 0}
-              >
-                {item.label}
-              </Link>
-            ) : (
-              <span 
-                className="text-gray-900 font-medium" 
-                aria-current={!isLoading ? "page" : undefined}
-              >
-                {item.label}
-              </span>
-            )}
-          </div>
-        ))}
+        {BreadcrumbItems}
         
         {/* Skeleton loaders for transitions */}
-        {isLoading && breadcrumbs.length === 0 && renderSkeletonBreadcrumbs()}
+        {isLoading && breadcrumbs.length === 0 && skeletonBreadcrumbs}
         
         {/* Loading indicator for ARIA */}
         {isLoading && (

@@ -2,8 +2,16 @@ import { useEffect, useRef } from 'react';
 import { processFirebaseContent } from '../utils/firebaseUtils';
 import { ErrorBoundary } from './ErrorBoundary';
 
+interface HeaderMedia {
+  url: string;
+  type: 'image' | 'video';
+  caption?: string;
+  fileName?: string;
+}
+
 interface ArticleContentProps {
   content: string;
+  headerMedia?: HeaderMedia | null;
 }
 
 // Content component that is wrapped by error boundary
@@ -106,6 +114,23 @@ const ContentRenderer = ({ content }: { content: string }) => {
           video.setAttribute('controls', 'true');
         }
         
+        // Add playsInline attribute for mobile compatibility
+        if (!video.hasAttribute('playsInline')) {
+          video.setAttribute('playsInline', 'true');
+        }
+        
+        // Add load event handler for success
+        if (!video.onloadeddata) {
+          video.onloadeddata = () => {
+            video.classList.add('video-loaded');
+          };
+        }
+        
+        // Add preload attribute for better performance
+        if (!video.hasAttribute('preload')) {
+          video.setAttribute('preload', 'metadata');
+        }
+        
         // Add error handling for videos
         video.onerror = () => {
           const parent = video.parentElement;
@@ -123,6 +148,34 @@ const ContentRenderer = ({ content }: { content: string }) => {
             video.replaceWith(errorMsg);
           }
         };
+        
+        // If video has no sources, create fallback content
+        const sources = video.querySelectorAll('source');
+        if (sources.length === 0 && video.src) {
+          // Get original src
+          const videoSrc = video.src;
+          
+          // Remove src from video element to force using source elements
+          video.removeAttribute('src');
+          
+          // Append source elements for common formats
+          const formats = ['video/mp4', 'video/webm', 'video/ogg'];
+          formats.forEach(format => {
+            const source = document.createElement('source');
+            source.src = videoSrc;
+            source.type = format;
+            video.appendChild(source);
+          });
+          
+          // Add fallback content
+          const fallback = document.createElement('div');
+          fallback.innerHTML = `
+            <p>Your browser doesn't support HTML5 video. Here is a 
+              <a href="${videoSrc}" target="_blank" rel="noopener noreferrer">link to the video</a> instead.
+            </p>
+          `;
+          video.appendChild(fallback);
+        }
       }
       
       // Process captions
@@ -190,8 +243,68 @@ const ContentRenderer = ({ content }: { content: string }) => {
   );
 };
 
+// Header Media Component
+const HeaderMediaRenderer = ({ headerMedia }: { headerMedia: HeaderMedia }) => {
+  return (
+    <div className="header-media-container mb-8 overflow-hidden rounded-lg shadow-lg">
+      {headerMedia.type === 'image' ? (
+        <figure className="relative">
+          <img 
+            src={headerMedia.url} 
+            alt={headerMedia.caption || 'Article header image'} 
+            className="w-full h-auto max-h-[600px] object-cover"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.onerror = null;
+              target.src = '/images/jezweb.webp'; // Fallback image
+              target.classList.add('image-error');
+            }}
+          />
+          {headerMedia.caption && (
+            <figcaption className="media-caption p-2 bg-gray-50 text-sm text-gray-600 italic">
+              {headerMedia.caption}
+            </figcaption>
+          )}
+        </figure>
+      ) : (
+        <figure className="relative">
+          <video 
+            src={headerMedia.url}
+            className="w-full h-auto max-h-[600px] object-cover"
+            controls
+            playsInline
+            preload="metadata"
+            onError={(e) => {
+              const target = e.target as HTMLVideoElement;
+              const parent = target.parentElement;
+              if (parent) {
+                const errorMsg = document.createElement('div');
+                errorMsg.className = "video-error bg-gray-100 text-gray-500 p-4 rounded-lg flex items-center justify-center h-64";
+                errorMsg.innerHTML = `
+                  <div class="text-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                    <p>Video unavailable</p>
+                  </div>
+                `;
+                target.replaceWith(errorMsg);
+              }
+            }}
+          ></video>
+          {headerMedia.caption && (
+            <figcaption className="media-caption p-2 bg-gray-50 text-sm text-gray-600 italic">
+              {headerMedia.caption}
+            </figcaption>
+          )}
+        </figure>
+      )}
+    </div>
+  );
+};
+
 // This component provides enhanced handling of rich text content from the editor
-export const ArticleContent = ({ content }: ArticleContentProps) => {
+export const ArticleContent = ({ content, headerMedia }: ArticleContentProps) => {
   // Use Firebase utility to process content safely
   const processedContent = processFirebaseContent(typeof content === 'string' ? content : '');
 
@@ -227,6 +340,27 @@ export const ArticleContent = ({ content }: ArticleContentProps) => {
           border-radius: 0.375rem;
           box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
           height: auto;
+        }
+        
+        .article-content-wrapper .quill-video {
+          max-width: 100%;
+          display: block;
+          opacity: 0.8;
+          transition: opacity 0.3s ease-in-out;
+        }
+        
+        .article-content-wrapper .quill-video.video-loaded {
+          opacity: 1;
+        }
+        
+        /* Hide fallback content inside video when video is supported */
+        .article-content-wrapper .quill-video > *:not(source) {
+          display: none;
+        }
+        
+        /* Show fallback content when video is not supported */
+        .article-content-wrapper video:not([controls]) > *:not(source) {
+          display: block;
         }
         
         .article-content-wrapper .quill-image.size-small,
@@ -280,6 +414,25 @@ export const ArticleContent = ({ content }: ArticleContentProps) => {
         .article-content-wrapper iframe.ql-video {
           display: block;
         }
+
+        /* Header Media styles */
+        .header-media-container {
+          width: 100%;
+          position: relative;
+        }
+
+        .header-media-container img, 
+        .header-media-container video {
+          width: 100%;
+          display: block;
+        }
+
+        .header-media-container .media-caption {
+          padding: 0.5rem 1rem;
+          background-color: rgba(249, 250, 251, 0.9);
+          font-size: 0.875rem;
+          color: #4b5563;
+        }
         
         @media (max-width: 640px) {
           .article-content-wrapper .quill-image.size-small,
@@ -308,6 +461,7 @@ export const ArticleContent = ({ content }: ArticleContentProps) => {
 
   return (
     <ErrorBoundary fallback={contentErrorFallback}>
+      {headerMedia && <HeaderMediaRenderer headerMedia={headerMedia} />}
       <ContentRenderer content={processedContent} />
     </ErrorBoundary>
   );

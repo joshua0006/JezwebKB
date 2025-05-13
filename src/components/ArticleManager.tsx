@@ -1,10 +1,38 @@
 import { useState, useEffect, useMemo } from 'react';
-import { getAllArticles, deleteArticle } from '../services/articleService';
+import { getAllArticles, deleteArticle, addCategory, getAllCategories, deleteCategory, seedInitialCategories } from '../services/articleService';
 import { Article } from '../types/article';
 import { Link } from 'react-router-dom';
 import { Spinner } from './Spinner';
 import { useAuth } from '../context/AuthContext';
-import { Edit, Trash2, Plus, Tag, FileText, AlertTriangle, Search, Filter, Calendar, X, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Edit, Trash2, Plus, Tag, FileText, AlertTriangle, Search, Filter, Calendar, X, ChevronDown, ChevronLeft, ChevronRight, RefreshCw, 
+  // Add more icons here for selection
+  BookOpen, Code, Coffee, Database, FileQuestion, Globe, Heart, Home, Image, Mail, MessageSquare, Music, 
+  Package, Settings, ShoppingCart, Star, User, Video, Zap } from 'lucide-react';
+
+// Map of available icons for categories
+const availableIcons = {
+  tag: Tag,
+  edit: Edit,
+  book: BookOpen,
+  code: Code,
+  coffee: Coffee,
+  database: Database,
+  file: FileQuestion,
+  globe: Globe,
+  heart: Heart,
+  home: Home,
+  image: Image,
+  mail: Mail,
+  message: MessageSquare,
+  music: Music,
+  package: Package,
+  settings: Settings,
+  cart: ShoppingCart,
+  star: Star,
+  user: User,
+  video: Video,
+  zap: Zap
+};
 
 export function ArticleManager() {
   const [articles, setArticles] = useState<Article[]>([]);
@@ -29,6 +57,24 @@ export function ArticleManager() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   
+  // Category management states
+  const [categoryModalOpen, setCategoryModalOpen] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [categories, setCategories] = useState<{id: string, name: string, docId: string, icon?: string}[]>([]);
+  const [categoryError, setCategoryError] = useState('');
+  const [categoryToDelete, setCategoryToDelete] = useState<{id: string, name: string, docId: string, icon?: string} | null>(null);
+  const [isDeletingCategory, setIsDeletingCategory] = useState(false);
+  const [deleteCategoryModalOpen, setDeleteCategoryModalOpen] = useState(false);
+  
+  // Add state for icon selection
+  const [selectedIcon, setSelectedIcon] = useState<string>('tag');
+  const [showIconSelector, setShowIconSelector] = useState(false);
+  
+  // Add states for seeding categories
+  const [isSeedingCategories, setIsSeedingCategories] = useState(false);
+  const [seedMessage, setSeedMessage] = useState('');
+  
   useEffect(() => {
     const fetchArticles = async () => {
       try {
@@ -41,8 +87,18 @@ export function ArticleManager() {
       }
     };
     
+    const fetchCategories = async () => {
+      try {
+        const categoriesData = await getAllCategories();
+        setCategories(categoriesData);
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+      }
+    };
+    
     if (userProfile?.role === 'admin') {
       fetchArticles();
+      fetchCategories();
     }
   }, [userProfile]);
   
@@ -75,17 +131,47 @@ export function ArticleManager() {
   };
   
   const getCategoryLabel = (category: string) => {
-    const categories: Record<string, { label: string, color: string }> = {
-      'wordpress': { label: 'WordPress', color: 'bg-blue-100 text-blue-800' },
-      'elementor': { label: 'Elementor', color: 'bg-purple-100 text-purple-800' },
-      'gravity-forms': { label: 'Gravity Forms', color: 'bg-green-100 text-green-800' },
-      'shopify': { label: 'Shopify', color: 'bg-cyan-100 text-cyan-800' },
-      'general': { label: 'General', color: 'bg-gray-100 text-gray-800' }
+    // First check if the category exists in our loaded categories
+    const foundCategory = categories.find(c => c.id === category);
+    if (foundCategory) {
+      return { 
+        label: foundCategory.name, 
+        color: getCategoryColor(category),
+        icon: foundCategory.icon || 'tag'
+      };
+    }
+    
+    // Fallback to hardcoded categories
+    const defaultCategories: Record<string, { label: string, color: string, icon: string }> = {
+      'wordpress': { label: 'WordPress', color: 'bg-blue-100 text-blue-800', icon: 'globe' },
+      'elementor': { label: 'Elementor', color: 'bg-purple-100 text-purple-800', icon: 'settings' },
+      'gravity-forms': { label: 'Gravity Forms', color: 'bg-green-100 text-green-800', icon: 'file' },
+      'shopify': { label: 'Shopify', color: 'bg-cyan-100 text-cyan-800', icon: 'cart' },
+      'general': { label: 'General', color: 'bg-gray-100 text-gray-800', icon: 'tag' }
     };
     
-    return categories[category] || { label: category, color: 'bg-gray-100 text-gray-800' };
+    return defaultCategories[category] || { label: category, color: 'bg-gray-100 text-gray-800', icon: 'tag' };
   };
   
+  // Helper function to get a consistent color for a category
+  const getCategoryColor = (categoryId: string) => {
+    // Define a set of colors to use
+    const colors = [
+      'bg-blue-100 text-blue-800',
+      'bg-purple-100 text-purple-800',
+      'bg-green-100 text-green-800',
+      'bg-cyan-100 text-cyan-800',
+      'bg-yellow-100 text-yellow-800',
+      'bg-red-100 text-red-800',
+      'bg-indigo-100 text-indigo-800',
+      'bg-pink-100 text-pink-800',
+    ];
+    
+    // Use the category ID to deterministically select a color
+    const index = categoryId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
+    return colors[index];
+  };
+
   const formatDate = (dateStr: any) => {
     if (!dateStr) return 'Unknown date';
     
@@ -121,14 +207,20 @@ export function ArticleManager() {
 
   // Get unique categories from articles
   const availableCategories = useMemo(() => {
-    const categories = new Set<string>();
+    // Use the categories from the database if available
+    if (categories.length > 0) {
+      return categories;
+    }
+    
+    // Fallback to extracting from articles if categories haven't loaded yet
+    const categorySet = new Set<string>();
     articles.forEach(article => {
       if (article.category) {
-        categories.add(article.category);
+        categorySet.add(article.category);
       }
     });
-    return Array.from(categories);
-  }, [articles]);
+    return Array.from(categorySet).map(id => ({ id, name: getCategoryLabel(id).label }));
+  }, [articles, categories]);
 
   // Get unique authors (createdBy)
   const availableAuthors = useMemo(() => {
@@ -238,6 +330,108 @@ export function ArticleManager() {
     setCurrentPage(1); // Reset to first page when changing items per page
   };
   
+  const handleAddCategory = async () => {
+    if (!newCategoryName.trim()) {
+      setCategoryError('Category name cannot be empty');
+      return;
+    }
+    
+    setIsAddingCategory(true);
+    setCategoryError('');
+    
+    try {
+      // Include the selected icon when adding a new category
+      const newCategory = await addCategory(newCategoryName, selectedIcon);
+      // Ensure we have a docId property (it will be added when fetching from Firebase next time)
+      setCategories([...categories, { ...newCategory, docId: 'temp-' + Date.now(), icon: selectedIcon }]);
+      setNewCategoryName('');
+      setSelectedIcon('tag'); // Reset to default icon
+      setCategoryModalOpen(false);
+    } catch (error) {
+      if (error instanceof Error) {
+        setCategoryError(error.message);
+      } else {
+        setCategoryError('Failed to add category');
+      }
+    } finally {
+      setIsAddingCategory(false);
+    }
+  };
+
+  const openCategoryModal = () => {
+    setNewCategoryName('');
+    setSelectedIcon('tag'); // Reset to default icon
+    setCategoryError('');
+    setCategoryModalOpen(true);
+  };
+
+  const closeCategoryModal = () => {
+    setCategoryModalOpen(false);
+    setCategoryError('');
+  };
+
+  const handleDeleteCategory = async () => {
+    if (!categoryToDelete) return;
+    
+    setIsDeletingCategory(true);
+    
+    try {
+      await deleteCategory(categoryToDelete.docId);
+      setCategories(categories.filter(cat => cat.docId !== categoryToDelete.docId));
+      closeDeleteCategoryModal();
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      if (error instanceof Error) {
+        setCategoryError(error.message);
+      } else {
+        setCategoryError('Failed to delete category');
+      }
+    } finally {
+      setIsDeletingCategory(false);
+    }
+  };
+
+  const confirmDeleteCategory = (category: {id: string, name: string, docId: string, icon?: string}) => {
+    setCategoryToDelete(category);
+    setDeleteCategoryModalOpen(true);
+  };
+
+  const closeDeleteCategoryModal = () => {
+    setDeleteCategoryModalOpen(false);
+    setCategoryToDelete(null);
+    setCategoryError('');
+  };
+  
+  // Add a function to handle seeding initial categories
+  const handleSeedCategories = async () => {
+    setIsSeedingCategories(true);
+    setSeedMessage('');
+    
+    try {
+      const result = await seedInitialCategories();
+      setSeedMessage(result.message);
+      
+      // Refresh the categories list
+      const categoriesData = await getAllCategories();
+      setCategories(categoriesData);
+    } catch (error) {
+      console.error('Error seeding categories:', error);
+      if (error instanceof Error) {
+        setSeedMessage(`Error: ${error.message}`);
+      } else {
+        setSeedMessage('Failed to seed categories');
+      }
+    } finally {
+      setIsSeedingCategories(false);
+    }
+  };
+  
+  // Function to render the selected icon
+  const renderCategoryIcon = (iconName: string) => {
+    const IconComponent = availableIcons[iconName as keyof typeof availableIcons] || Tag;
+    return <IconComponent className="w-4 h-4" />;
+  };
+  
   if (loading) {
     return (
       <div className="text-center py-8">
@@ -250,13 +444,22 @@ export function ArticleManager() {
     <div className="bg-white rounded-xl shadow-sm p-6">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold">Article Management</h2>
-        <Link 
-          to="/admin/articles/new"
-          className="bg-indigo-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-indigo-700 transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Create Article
-        </Link>
+        <div className="flex gap-3">
+          <Link 
+            to="/admin/articles/create"
+            className="bg-purple-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-purple-700 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Create Article
+          </Link>
+          <button
+            onClick={openCategoryModal}
+            className="bg-indigo-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-indigo-700 transition-colors"
+          >
+            <Tag className="w-4 h-4" />
+            Add Category
+          </button>
+        </div>
       </div>
 
       {/* Search and Filter Section */}
@@ -307,18 +510,18 @@ export function ArticleManager() {
             {/* Category Filter */}
             <div>
               <h3 className="text-sm font-medium text-gray-700 mb-2">Categories</h3>
-              <div className="space-y-1">
+              <div className="space-y-1 max-h-40 overflow-y-auto">
                 {availableCategories.map(category => (
-                  <div key={category} className="flex items-center">
+                  <div key={category.id} className="flex items-center">
                     <input
-                      id={`category-${category}`}
+                      id={`category-${category.id}`}
                       type="checkbox"
                       className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                      checked={selectedCategories.includes(category)}
-                      onChange={() => toggleCategoryFilter(category)}
+                      checked={selectedCategories.includes(category.id)}
+                      onChange={() => toggleCategoryFilter(category.id)}
                     />
-                    <label htmlFor={`category-${category}`} className="ml-2 text-sm text-gray-600">
-                      {getCategoryLabel(category).label}
+                    <label htmlFor={`category-${category.id}`} className="ml-2 text-sm text-gray-600">
+                      {category.name}
                     </label>
                   </div>
                 ))}
@@ -413,12 +616,14 @@ export function ArticleManager() {
               {paginatedArticles.map(article => {
                 const category = getCategoryLabel(article.category);
                 const date = formatDate(article.createdAt);
+                const IconComponent = availableIcons[category.icon as keyof typeof availableIcons] || Tag;
                 
                 return (
                   <tr key={article.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3 text-sm">{article.title}</td>
                     <td className="px-4 py-3 text-sm">
-                      <span className={`${category.color} px-2 py-1 rounded-full text-xs`}>
+                      <span className={`${category.color} px-2 py-1 rounded-full text-xs flex items-center gap-1`}>
+                        <IconComponent className="w-3 h-3" />
                         {category.label}
                       </span>
                     </td>
@@ -434,11 +639,13 @@ export function ArticleManager() {
                     <td className="px-4 py-3 text-sm text-gray-500">{date}</td>
                     <td className="px-4 py-3 text-sm text-right space-x-2">
                       <Link 
-                        to={`/admin/articles/${article.id}/edit`} 
-                        className="text-indigo-600 hover:text-indigo-800 p-1 inline-flex items-center"
+                        to={`/admin/articles/${article.id}/edit-new`} 
+                        className="text-purple-600 hover:text-purple-800 p-1 inline-flex items-center"
+                        title="Edit article"
                       >
                         <Edit className="w-4 h-4" />
                       </Link>
+                   
                       <button 
                         onClick={() => confirmDelete(article)}
                         className="text-red-600 hover:text-red-800 p-1 inline-flex items-center"
@@ -536,6 +743,199 @@ export function ArticleManager() {
                 disabled={isDeleting}
               >
                 {isDeleting ? (
+                  <>
+                    <Spinner className="w-4 h-4 text-white" />
+                    Deleting...
+                  </>
+                ) : (
+                  'Delete'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Category Modal */}
+      {categoryModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+            <div className="flex items-center mb-4 text-indigo-600">
+              <Tag className="w-6 h-6 mr-2" />
+              <h3 className="text-lg font-semibold">Category Management</h3>
+            </div>
+            
+            <div className="mb-6">
+              <label htmlFor="categoryName" className="block text-sm font-medium text-gray-700 mb-1">
+                Add New Category
+              </label>
+              <div className="flex gap-2 mb-3">
+                <input
+                  id="categoryName"
+                  type="text"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  placeholder="Enter category name"
+                />
+                <button
+                  onClick={handleAddCategory}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2 whitespace-nowrap"
+                  disabled={isAddingCategory || !newCategoryName.trim()}
+                >
+                  {isAddingCategory ? (
+                    <>
+                      <Spinner className="w-4 h-4 text-white" />
+                      Adding...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-4 h-4" />
+                      Add
+                    </>
+                  )}
+                </button>
+              </div>
+              
+              {/* Icon selector */}
+              <div className="mb-3">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Select Icon
+                </label>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowIconSelector(!showIconSelector)}
+                    className="w-full flex items-center justify-between px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    <div className="flex items-center gap-2">
+                      {renderCategoryIcon(selectedIcon)}
+                      <span className="text-sm">{selectedIcon}</span>
+                    </div>
+                    <ChevronDown className="w-4 h-4" />
+                  </button>
+                  
+                  {showIconSelector && (
+                    <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                      <div className="grid grid-cols-4 gap-2 p-2">
+                        {Object.keys(availableIcons).map(iconName => (
+                          <button
+                            key={iconName}
+                            type="button"
+                            onClick={() => {
+                              setSelectedIcon(iconName);
+                              setShowIconSelector(false);
+                            }}
+                            className={`flex flex-col items-center justify-center p-2 rounded-md hover:bg-gray-100 ${
+                              selectedIcon === iconName ? 'bg-indigo-50 border border-indigo-200' : ''
+                            }`}
+                          >
+                            {renderCategoryIcon(iconName)}
+                            <span className="text-xs mt-1">{iconName}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              {categoryError && (
+                <p className="mt-1 text-sm text-red-600">{categoryError}</p>
+              )}
+            </div>
+            
+            {/* Existing Categories List */}
+            <div className="mb-6">
+              <div className="flex justify-between items-center mb-2">
+                <h4 className="text-sm font-medium text-gray-700">Existing Categories</h4>
+               
+              </div>
+              
+              {seedMessage && (
+                <p className={`text-sm mb-2 p-1 rounded ${seedMessage.includes('Error') ? 'text-red-600' : 'text-green-600'}`}>
+                  {seedMessage}
+                </p>
+              )}
+              
+              {categories.length === 0 ? (
+                <p className="text-sm text-gray-500 italic">No categories found</p>
+              ) : (
+                <div className="max-h-60 overflow-y-auto border border-gray-200 rounded-md">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Icon</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {categories.map(category => (
+                        <tr key={category.docId}>
+                          <td className="px-4 py-2 text-sm text-gray-900">
+                            <div className="flex items-center justify-center">
+                              {renderCategoryIcon(category.icon || 'tag')}
+                            </div>
+                          </td>
+                          <td className="px-4 py-2 text-sm text-gray-900">{category.name}</td>
+                          <td className="px-4 py-2 text-right">
+                            <button
+                              onClick={() => confirmDeleteCategory(category)}
+                              className="text-red-600 hover:text-red-800 p-1 inline-flex items-center"
+                              title="Delete category"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+            
+            <div className="flex justify-end">
+              <button
+                onClick={closeCategoryModal}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Category Confirmation Modal */}
+      {deleteCategoryModalOpen && categoryToDelete && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+            <div className="flex items-center mb-4 text-red-600">
+              <AlertTriangle className="w-6 h-6 mr-2" />
+              <h3 className="text-lg font-semibold">Delete Category</h3>
+            </div>
+            <p className="mb-4">
+              Are you sure you want to delete the category "{categoryToDelete.name}"? This action cannot be undone.
+            </p>
+            <p className="mb-4 text-sm bg-yellow-50 p-3 rounded-md text-yellow-800 border border-yellow-200">
+              <strong>Warning:</strong> Deleting this category will not affect existing articles that use it, but they may display with an unknown category.
+            </p>
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={closeDeleteCategoryModal}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                disabled={isDeletingCategory}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteCategory}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
+                disabled={isDeletingCategory}
+              >
+                {isDeletingCategory ? (
                   <>
                     <Spinner className="w-4 h-4 text-white" />
                     Deleting...
