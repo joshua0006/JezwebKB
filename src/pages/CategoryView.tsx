@@ -3,13 +3,14 @@ import { Link } from 'react-router-dom';
 import { Layout, Box, FileText, ShoppingBag, ArrowRight,
   Globe, Settings, File, ShoppingCart, Tag,
   BookOpen, Code, Coffee, Database, FileQuestion, Heart, Home, Image, Mail, MessageSquare, Music, 
-  Package, Star, User, Video, Zap } from 'lucide-react';
+  Package, Star, User, Video, Zap, PlayCircle, Clock, Film } from 'lucide-react';
 import { format } from 'date-fns';
 import ScrollToTopLink from '../components/ScrollToTopLink';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { collection, query, where, getDocs, Timestamp, doc, getDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { getAllCategories } from '../services/articleService';
+import { ArticleCard } from '../components/ArticleCard';
 
 // Article type definition
 interface Article {
@@ -20,11 +21,13 @@ interface Article {
   category: string;
   tags: string[];
   image?: string;
+  videoUrl?: string;
   published: boolean;
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
+  createdAt: Timestamp | string;
+  updatedAt: Timestamp | string;
   createdBy: string;
   slug?: string;
+  author?: string;
 }
 
 // Category type definition
@@ -49,6 +52,61 @@ const getSlug = (article: Article): string => {
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
     .trim();
+};
+
+// Browser detection for video compatibility
+const getBrowserInfo = () => {
+  const userAgent = navigator.userAgent;
+  let browser = '';
+  let version = '';
+  
+  // Safari
+  if (userAgent.indexOf('Safari') !== -1 && userAgent.indexOf('Chrome') === -1) {
+    browser = 'safari';
+    version = userAgent.match(/Version\/([\d.]+)/)?.[1] || '';
+  }
+  // Edge
+  else if (userAgent.indexOf('Edg') !== -1) {
+    browser = 'edge';
+    version = userAgent.match(/Edg\/([\d.]+)/)?.[1] || '';
+  }
+  // Chrome
+  else if (userAgent.indexOf('Chrome') !== -1) {
+    browser = 'chrome';
+    version = userAgent.match(/Chrome\/([\d.]+)/)?.[1] || '';
+  }
+  // Firefox
+  else if (userAgent.indexOf('Firefox') !== -1) {
+    browser = 'firefox';
+    version = userAgent.match(/Firefox\/([\d.]+)/)?.[1] || '';
+  }
+  // IE
+  else if (userAgent.indexOf('MSIE') !== -1 || userAgent.indexOf('Trident/') !== -1) {
+    browser = 'ie';
+    version = userAgent.match(/(?:MSIE |rv:)([\d.]+)/)?.[1] || '';
+  }
+  
+  return { browser, version };
+};
+
+// Get appropriate video format based on browser
+const getVideoFormat = (browser: string) => {
+  switch(browser) {
+    case 'safari':
+      return 'video/mp4';
+    case 'firefox':
+      return 'video/webm';
+    default:
+      return 'video/mp4'; // Default to MP4 for most browsers
+  }
+};
+
+// Check if a URL is a video
+const isVideoUrl = (url: string): boolean => {
+  if (!url) return false;
+  return !!url.match(/\.(mp4|webm|ogg|mov)($|\?)/i) || 
+         url.includes('firebasestorage.googleapis.com') && 
+         url.includes('video');
 };
 
 // Map of icon components
@@ -88,12 +146,19 @@ export function CategoryView() {
   const navigate = useNavigate();
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
-  const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
+  const [mediaErrors, setMediaErrors] = useState<Record<string, boolean>>({});
+  const [isVideoMap, setIsVideoMap] = useState<Record<string, boolean>>({});
   const [category, setCategory] = useState<CategoryData | null>(null);
+  const [browserInfo, setBrowserInfo] = useState<{ browser: string; version: string }>({ browser: '', version: '' });
   const fallbackImage = '/images/jezweb.webp';
   
-  const handleImageError = (articleId: string) => {
-    setImageErrors(prev => ({ ...prev, [articleId]: true }));
+  // Detect browser on component mount
+  useEffect(() => {
+    setBrowserInfo(getBrowserInfo());
+  }, []);
+
+  const handleMediaError = (articleId: string) => {
+    setMediaErrors(prev => ({ ...prev, [articleId]: true }));
   };
 
   // Fetch category data
@@ -146,11 +211,40 @@ export function CategoryView() {
         const articlesQuery = query(articlesRef, where('category', '==', categoryId), where('published', '==', true));
         const querySnapshot = await getDocs(articlesQuery);
         
-        const articleData = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as Article[];
+        const articleData = querySnapshot.docs.map(doc => {
+          const data = doc.data();
+          
+          // Convert Firestore timestamp to string for compatibility with ArticleCard
+          const createdAt = data.createdAt?.toDate?.() 
+            ? data.createdAt.toDate().toISOString() 
+            : new Date().toISOString();
+          
+          const updatedAt = data.updatedAt?.toDate?.() 
+            ? data.updatedAt.toDate().toISOString() 
+            : new Date().toISOString();
+            
+          return {
+            id: doc.id,
+            ...data,
+            createdAt,
+            updatedAt,
+            image: data.image || null // Ensure image property exists
+          };
+        }) as Article[];
         
+        // Detect video content for each article
+        const videoMap: Record<string, boolean> = {};
+        articleData.forEach(article => {
+          if (article.videoUrl) {
+            videoMap[article.id] = true;
+          } else if (article.image) {
+            videoMap[article.id] = isVideoUrl(article.image);
+          } else {
+            videoMap[article.id] = false;
+          }
+        });
+        
+        setIsVideoMap(videoMap);
         setArticles(articleData);
       } catch (error) {
         console.error('Error fetching articles:', error);
@@ -167,10 +261,16 @@ export function CategoryView() {
     return iconComponents[iconName] || iconComponents['tag']; // Fallback to Tag icon
   };
 
+  // Handle article selection
+  const handleSelectArticle = (article: Article) => {
+    navigate(`/article/${article.slug || getSlug(article)}`);
+  };
+
   if (loading) {
     return (
       <div className="text-center py-16">
         <h1 className="text-2xl font-bold text-gray-900 mb-4">Loading Articles...</h1>
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-indigo-500 mx-auto"></div>
       </div>
     );
   }
@@ -194,7 +294,7 @@ export function CategoryView() {
   const CategoryIcon = category ? getIconComponent(category.icon) : null;
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex items-center mb-8">
         {CategoryIcon && (
           <div className="bg-indigo-100 p-3 rounded-lg mr-4">
@@ -203,72 +303,25 @@ export function CategoryView() {
         )}
         <h1 className="text-3xl font-bold text-gray-900">Articles in Category: {categoryName}</h1>
       </div>
-      <div className="grid items-center align-center grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-        {articles.map(article => (
-          <div
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {articles.map((article) => (
+          <Link
             key={article.id}
-            className="bg-white w-[360px] mx-auto rounded-lg shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden border border-gray-100"
+            to={`/article/${article.slug || getSlug(article)}`}
+            className="group h-full"
+            onClick={(e) => {
+              e.preventDefault(); // Prevent default link behavior
+              handleSelectArticle(article);
+            }}
           >
-            {/* Image Section */}
-            <div className="aspect-video w-full overflow-hidden">
-              <img
-                src={imageErrors[article.id] ? fallbackImage : (article.image || fallbackImage)}
-                alt={article.title}
-                className="w-full h-full object-cover"
-                onError={() => handleImageError(article.id)}
+            <div className="h-full">
+              <ArticleCard 
+                article={article as any}
+                onSelect={handleSelectArticle as any}
               />
             </div>
-
-            {/* Content Section */}
-            <div className="p-6">
-              {/* Category */}
-              <div className="mb-2">
-                <Link
-                  to={`/categories/${article.category}`}
-                  className="text-xs font-medium uppercase text-indigo-600 hover:text-indigo-800"
-                >
-                  {article.category.charAt(0).toUpperCase() + article.category.slice(1).replace('-', ' ')}
-                </Link>
-              </div>
-
-              {/* Title */}
-              <h3 className="text-xl font-semibold text-gray-900 mb-2 text-left">
-                <Link to={`/article/${article.slug || getSlug(article)}`} className="hover:text-blue-600 line-clamp-1 block">
-                  {article.title}
-                </Link>
-              </h3>
-
-              {/* Description */}
-              <p 
-                className="text-gray-600 mb-4 line-clamp-2 text-left"
-                dangerouslySetInnerHTML={{
-                  __html: article.description || article.content.substring(0, 100).replace(/<[^>]*>/g, '') + '...'
-                }}
-              ></p>
-
-              {/* Time and Read More Button */}
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-500 flex-shrink-0">
-                  {article.updatedAt ? (
-                    <>Updated {format(
-                      isFirestoreTimestamp(article.updatedAt) 
-                        ? article.updatedAt.toDate() 
-                        : new Date(article.updatedAt as unknown as string), 
-                      'MMM d, yyyy'
-                    )}</>
-                  ) : (
-                    'Recently updated'
-                  )}
-                </span>
-                <Link
-                  to={`/article/${article.slug || getSlug(article)}`}
-                  className="flex-shrink-0 flex items-center justify-center px-3 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 transition-colors"
-                >
-                  Read More
-                </Link>
-              </div>
-            </div>
-          </div>
+          </Link>
         ))}
       </div>
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { PlayCircle, Clock, Image } from 'lucide-react';
 import { Article as ArticleType } from '../types/article';
 import { Article as IndexArticleType } from '../types';
@@ -13,6 +13,9 @@ interface ArticleCardProps {
 
 export function ArticleCard({ article, onSelect }: ArticleCardProps) {
   const [mediaError, setMediaError] = useState(false);
+  const [isVideoLoaded, setIsVideoLoaded] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const fallbackImage = '/images/jezweb.webp';
   
   const handleMediaError = () => {
@@ -40,6 +43,36 @@ export function ArticleCard({ article, onSelect }: ArticleCardProps) {
     return 'No description available';
   };
 
+  useEffect(() => {
+    // Initialize videos when component mounts
+    const videoElement = videoRef.current;
+    if (videoElement && hasVideo()) {
+      // Add event listeners
+      videoElement.addEventListener('loadeddata', () => setIsVideoLoaded(true));
+      videoElement.addEventListener('error', handleMediaError);
+      
+      // Clean up
+      return () => {
+        videoElement.removeEventListener('loadeddata', () => setIsVideoLoaded(true));
+        videoElement.removeEventListener('error', handleMediaError);
+      };
+    }
+  }, []);
+
+  // Play/pause video based on hover state
+  useEffect(() => {
+    const videoElement = videoRef.current;
+    if (videoElement && isVideoLoaded) {
+      if (isHovered) {
+        videoElement.play().catch(error => {
+          console.error('Error playing video:', error);
+        });
+      } else {
+        videoElement.pause();
+      }
+    }
+  }, [isHovered, isVideoLoaded]);
+
   // Determine the media to display
   const getMediaContent = () => {
     // If article is from article.ts and has headerMedia
@@ -57,14 +90,22 @@ export function ArticleCard({ article, onSelect }: ArticleCardProps) {
         return (
           <div className="relative w-full h-full">
             <video
+              ref={videoRef}
               src={article.headerMedia.url}
               className="w-full h-full object-cover"
               onError={handleMediaError}
               title={article.title}
               muted
+              loop
               playsInline
-              preload="metadata"
+              preload="auto"
             />
+            {!isVideoLoaded && (
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+                <span className="animate-pulse">Loading video...</span>
+              </div>
+            )}
+           
           </div>
         );
       }
@@ -75,14 +116,26 @@ export function ArticleCard({ article, onSelect }: ArticleCardProps) {
       return (
         <div className="relative w-full h-full">
           <video
+            ref={videoRef}
             src={article.videoUrl}
             className="w-full h-full object-cover"
             onError={handleMediaError}
             title={article.title}
             muted
+            loop
             playsInline
-            preload="metadata"
+            preload="auto"
           />
+          {!isVideoLoaded && (
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+              <span className="animate-pulse">Loading video...</span>
+            </div>
+          )}
+          {isVideoLoaded && !isHovered && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30">
+              <PlayCircle className="h-12 w-12 text-white opacity-80" />
+            </div>
+          )}
         </div>
       );
     }
@@ -118,7 +171,11 @@ export function ArticleCard({ article, onSelect }: ArticleCardProps) {
   };
 
   return (
-    <div className="h-full flex flex-col bg-white rounded-lg shadow-sm hover:shadow-md transition-all border border-gray-100 overflow-hidden">
+    <div 
+      className="h-full flex flex-col bg-white rounded-lg shadow-sm hover:shadow-md transition-all border border-gray-100 overflow-hidden"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
       <div className="aspect-[2/1] overflow-hidden">
         {getMediaContent()}
       </div>

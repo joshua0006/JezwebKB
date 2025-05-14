@@ -35,6 +35,9 @@ export interface ArticleFormData {
   additionalImages: string[];
   videos: string[];
   headerMedia?: HeaderMedia | null;
+  lastUpdated?: string;
+  isMinimalVersion?: boolean;
+  isLoading?: boolean;
 }
 
 export interface Article extends ArticleFormData {

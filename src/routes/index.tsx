@@ -21,7 +21,7 @@ import { UserManagement } from '../components/UserManagement';
 import { NotificationManager } from '../components/NotificationManager';
 import { AdminLayout } from '../components/AdminLayout';
 import { ArticleManager } from '../components/ArticleManager';
-
+import { ArticlePreview } from '../components/ArticlePreview';
 import { ArticleCreator } from '../components/ArticleCreator';
 import { EditArticle } from '../components/EditArticle';
 import { AdminTools } from '../pages/AdminTools';
@@ -30,6 +30,9 @@ import { AdminTools } from '../pages/AdminTools';
 export function AppRoutes() {
   return (
     <Routes>
+      {/* Standalone routes outside of main layout */}
+      <Route path="/article-preview" element={<ArticlePreview />} />
+      
       <Route element={<Layout />}>
         {/* Public routes */}
         <Route path="/" element={<HomePage />} />

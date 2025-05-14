@@ -21,7 +21,7 @@ import {
   Bold, Italic, Underline as UnderlineIcon, AlignLeft, AlignCenter, AlignRight, 
   List, ListOrdered, Heading1, Heading2, Heading3,
   Link as LinkIcon, Image as ImageIcon,
-  Highlighter, Save, Eye, X, Plus, ArrowLeft, Calendar, Tag, Upload, Trash2
+  Highlighter, Save, Eye, X, Plus, ArrowLeft, Calendar, Tag, Upload, Trash2, Monitor
 } from 'lucide-react';
 
 // Browser detection for video compatibility
@@ -175,6 +175,80 @@ const createVideoElement = (url: string, type: string, caption: string, size: st
   `;
 };
 
+// Create a key for localStorage to store the article data
+const PREVIEW_STORAGE_KEY = 'articlePreviewData';
+
+// Helper function to safely update storage
+const safelyUpdateStorage = (data: any, previewRef: React.MutableRefObject<Window | null>) => {
+  try {
+    // Create a copy of the data to avoid modifying the original
+    const dataToStore = { ...data };
+    
+    // Always prioritize direct communication with preview window if available
+    if (previewRef.current && !previewRef.current.closed) {
+      try {
+        previewRef.current.postMessage({
+          type: 'article-update-direct',
+          articleData: dataToStore,
+          timestamp: new Date().getTime()
+        }, '*');
+        
+        // If direct communication succeeds, we can avoid storage altogether
+        return;
+      } catch (e) {
+        console.log('Direct preview communication failed, falling back to storage', e);
+      }
+    }
+    
+    // Always use sessionStorage instead of localStorage to avoid persistent quota issues
+    const storageToUse = sessionStorage;
+    
+    // If content is large, compress it more aggressively
+    if (dataToStore.content && dataToStore.content.length > 50000) {
+      // For preview, we don't need to store the entire content - just create a minimal version
+      const minimalContent = {
+        title: dataToStore.title || 'Untitled Article',
+        author: dataToStore.author,
+        category: dataToStore.category,
+        tags: dataToStore.tags,
+        publicationDate: dataToStore.publicationDate,
+        headerMedia: dataToStore.headerMedia,
+        lastUpdated: new Date().toISOString(),
+        // Only keep essential content for the preview
+        content: '<p>Content available in full preview. Use the "Full Article Preview" button for best experience.</p>',
+        // Add a flag to indicate this is truncated
+        isMinimalVersion: true
+      };
+      
+      // Store the minimal data
+      storageToUse.setItem(PREVIEW_STORAGE_KEY, JSON.stringify(minimalContent));
+    } else {
+      // Small content can be stored as is
+      storageToUse.setItem(PREVIEW_STORAGE_KEY, JSON.stringify(dataToStore));
+    }
+  } catch (error) {
+    console.error('Error updating preview storage:', error);
+    
+    // If all storage methods fail, only store minimal metadata
+    try {
+      const minimalData = {
+        title: data.title || 'Untitled Article',
+        author: data.author,
+        category: data.category,
+        tags: data.tags,
+        publicationDate: data.publicationDate,
+        headerMedia: data.headerMedia,
+        lastUpdated: new Date().toISOString(),
+        isMinimalVersion: true,
+        content: '<p>Storage quota exceeded. Please use the "Full Article Preview" button for complete content.</p>'
+      };
+      sessionStorage.setItem(PREVIEW_STORAGE_KEY, JSON.stringify(minimalData));
+    } catch (fallbackError) {
+      console.error('Even fallback storage failed:', fallbackError);
+    }
+  }
+};
+
 /**
  * Initial form data for the article creator
  */
@@ -195,6 +269,122 @@ interface ArticleCreatorProps {
   articleId?: string;
 }
 
+// Link Dialog Component
+interface LinkDialogProps {
+  isOpen: boolean;
+  initialUrl: string;
+  onClose: () => void;
+  onSave: (url: string) => void;
+  onRemove?: () => void;
+}
+
+const LinkDialog: React.FC<LinkDialogProps> = ({ isOpen, initialUrl, onClose, onSave, onRemove }) => {
+  const [url, setUrl] = useState(initialUrl || '');
+  const [error, setError] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+  
+  useEffect(() => {
+    if (isOpen && inputRef.current) {
+      setUrl(initialUrl || '');
+      setError('');
+      setTimeout(() => {
+        inputRef.current?.focus();
+        inputRef.current?.select();
+      }, 10);
+    }
+  }, [isOpen, initialUrl]);
+  
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validate and format the URL
+    if (url.trim() === '') {
+      onSave(''); // Empty URL means remove link
+      return;
+    }
+    
+    let processedUrl = url.trim();
+    
+    // Check if URL has a protocol
+    if (!/^(https?:\/\/|mailto:|tel:|ftp:|\/)/.test(processedUrl)) {
+      // Add https:// protocol if missing
+      processedUrl = 'https://' + processedUrl;
+    }
+    
+    // Basic URL validation
+    try {
+      new URL(processedUrl);
+      onSave(processedUrl);
+    } catch (e) {
+      // If it's not a valid URL even after adding https://, show an error
+      setError('Please enter a valid URL');
+    }
+  };
+  
+  if (!isOpen) return null;
+  
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
+        <h3 className="text-lg font-medium mb-4">Insert Link</h3>
+        <form onSubmit={handleSubmit}>
+          <div className="mb-4">
+            <label htmlFor="url" className="block text-sm font-medium text-gray-700 mb-1">
+              URL
+            </label>
+            <input
+              type="text"
+              id="url"
+              ref={inputRef}
+              value={url}
+              onChange={(e) => {
+                setUrl(e.target.value);
+                setError('');
+              }}
+              className={`w-full px-3 py-2 border ${error ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500`}
+              placeholder="https://example.com"
+            />
+            {error && (
+              <p className="mt-1 text-sm text-red-600">{error}</p>
+            )}
+            <p className="mt-1 text-xs text-gray-500">
+              Tip: If you don't include http:// or https://, https:// will be added automatically.
+            </p>
+          </div>
+          <div className="flex justify-between">
+            <div>
+              {onRemove && (
+                <button
+                  type="button"
+                  onClick={onRemove}
+                  className="px-4 py-2 border border-red-500 text-red-500 rounded-lg hover:bg-red-50"
+                >
+                  Remove Link
+                </button>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
 /**
  * ArticleCreator component for creating and editing articles
  * Uses Tiptap editor for rich text editing
@@ -208,6 +398,7 @@ export const ArticleCreator: React.FC<ArticleCreatorProps> = ({ articleId }) => 
   const [formData, setFormData] = useState<ArticleFormData>(initialFormData);
   const [loading, setLoading] = useState<boolean>(false);
   const [previewMode, setPreviewMode] = useState<boolean>(false);
+  const [fullArticlePreview, setFullArticlePreview] = useState<boolean>(false);
   const [tag, setTag] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -215,12 +406,18 @@ export const ArticleCreator: React.FC<ArticleCreatorProps> = ({ articleId }) => 
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [mediaType, setMediaType] = useState<'image' | 'video' | null>(null);
   const [dragActive, setDragActive] = useState<boolean>(false);
+  const [lastEditorUpdate, setLastEditorUpdate] = useState<number>(Date.now());
+  const [linkDialogOpen, setLinkDialogOpen] = useState<boolean>(false);
+  const [currentLinkUrl, setCurrentLinkUrl] = useState<string>('');
   
   const imageInputRef = useRef<HTMLInputElement>(null);
   const headerMediaInputRef = useRef<HTMLInputElement>(null);
   const headerDropAreaRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
+  
+  // For storing the preview window reference
+  const previewWindowRef = useRef<Window | null>(null);
 
   // Browser detection for video compatibility
   const [browserInfo, setBrowserInfo] = useState<{ browser: string; version: string }>({ browser: '', version: '' });
@@ -293,7 +490,46 @@ export const ArticleCreator: React.FC<ArticleCreatorProps> = ({ articleId }) => 
     ],
     content: '',
     onUpdate: ({ editor }) => {
-      setFormData(prev => ({ ...prev, content: editor.getHTML() }));
+      const newContent = editor.getHTML();
+      setFormData(prev => {
+        const updated = { ...prev, content: newContent };
+        
+        // Force preview refresh
+        setLastEditorUpdate(Date.now());
+        
+        // If preview window exists, prioritize direct communication
+        if (previewWindowRef.current && !previewWindowRef.current.closed) {
+          try {
+            // Send all article data directly to avoid storage limitations
+            previewWindowRef.current.postMessage({
+              type: 'article-update-direct',
+              articleData: {
+                ...updated,
+                content: newContent,
+                lastUpdated: new Date().toISOString()
+              },
+              timestamp: Date.now()
+            }, '*');
+          } catch (e) {
+            // If direct communication fails, fallback to storage method
+            console.warn('Direct preview communication failed, using storage fallback', e);
+            safelyUpdateStorage({
+              ...updated,
+              content: newContent,
+              lastUpdated: new Date().toISOString()
+            }, previewWindowRef);
+          }
+        } else {
+          // No preview window, update storage as fallback
+          safelyUpdateStorage({
+            ...updated,
+            content: newContent,
+            lastUpdated: new Date().toISOString()
+          }, previewWindowRef);
+        }
+        
+        return updated;
+      });
     },
   });
 
@@ -476,7 +712,41 @@ export const ArticleCreator: React.FC<ArticleCreatorProps> = ({ articleId }) => 
    */
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    
+    setFormData(prev => {
+      const updated = { ...prev, [name]: value };
+      
+      // If preview window exists, prioritize direct communication
+      if (previewWindowRef.current && !previewWindowRef.current.closed) {
+        try {
+          previewWindowRef.current.postMessage({
+            type: 'article-update-direct',
+            articleData: {
+              ...updated,
+              content: editor?.getHTML() || updated.content,
+              lastUpdated: new Date().toISOString()
+            },
+            timestamp: Date.now()
+          }, '*');
+        } catch (e) {
+          // If direct communication fails, fallback to storage method
+          safelyUpdateStorage({
+            ...updated,
+            content: editor?.getHTML() || updated.content,
+            lastUpdated: new Date().toISOString()
+          }, previewWindowRef);
+        }
+      } else {
+        // No preview window, update storage as fallback
+        safelyUpdateStorage({
+          ...updated,
+          content: editor?.getHTML() || updated.content,
+          lastUpdated: new Date().toISOString()
+        }, previewWindowRef);
+      }
+      
+      return updated;
+    });
   };
 
   /**
@@ -485,10 +755,43 @@ export const ArticleCreator: React.FC<ArticleCreatorProps> = ({ articleId }) => 
   const addTag = () => {
     if (!tag.trim()) return;
     if (!formData.tags.includes(tag.trim())) {
-      setFormData(prev => ({
-        ...prev,
-        tags: [...prev.tags, tag.trim()]
-      }));
+      setFormData(prev => {
+        const updated = {
+          ...prev,
+          tags: [...prev.tags, tag.trim()]
+        };
+        
+        // If preview window exists, prioritize direct communication
+        if (previewWindowRef.current && !previewWindowRef.current.closed) {
+          try {
+            previewWindowRef.current.postMessage({
+              type: 'article-update-direct',
+              articleData: {
+                ...updated,
+                content: editor?.getHTML() || updated.content,
+                lastUpdated: new Date().toISOString()
+              },
+              timestamp: Date.now()
+            }, '*');
+          } catch (e) {
+            // If direct communication fails, fallback to storage method
+            safelyUpdateStorage({
+              ...updated,
+              content: editor?.getHTML() || updated.content,
+              lastUpdated: new Date().toISOString()
+            }, previewWindowRef);
+          }
+        } else {
+          // No preview window, update storage as fallback
+          safelyUpdateStorage({
+            ...updated,
+            content: editor?.getHTML() || updated.content,
+            lastUpdated: new Date().toISOString()
+          }, previewWindowRef);
+        }
+        
+        return updated;
+      });
     }
     setTag('');
   };
@@ -497,10 +800,43 @@ export const ArticleCreator: React.FC<ArticleCreatorProps> = ({ articleId }) => 
    * Remove a tag from the article
    */
   const removeTag = (tagToRemove: string) => {
-    setFormData(prev => ({
-      ...prev,
-      tags: prev.tags.filter(tag => tag !== tagToRemove)
-    }));
+    setFormData(prev => {
+      const updated = {
+        ...prev,
+        tags: prev.tags.filter(tag => tag !== tagToRemove)
+      };
+      
+      // If preview window exists, prioritize direct communication
+      if (previewWindowRef.current && !previewWindowRef.current.closed) {
+        try {
+          previewWindowRef.current.postMessage({
+            type: 'article-update-direct',
+            articleData: {
+              ...updated,
+              content: editor?.getHTML() || updated.content,
+              lastUpdated: new Date().toISOString()
+            },
+            timestamp: Date.now()
+          }, '*');
+        } catch (e) {
+          // If direct communication fails, fallback to storage method
+          safelyUpdateStorage({
+            ...updated,
+            content: editor?.getHTML() || updated.content,
+            lastUpdated: new Date().toISOString()
+          }, previewWindowRef);
+        }
+      } else {
+        // No preview window, update storage as fallback
+        safelyUpdateStorage({
+          ...updated,
+          content: editor?.getHTML() || updated.content,
+          lastUpdated: new Date().toISOString()
+        }, previewWindowRef);
+      }
+      
+      return updated;
+    });
   };
 
   /**
@@ -613,6 +949,49 @@ export const ArticleCreator: React.FC<ArticleCreatorProps> = ({ articleId }) => 
   };
 
   /**
+   * Update header media and maintain preview sync
+   */
+  const updateHeaderMedia = (media: any) => {
+    setFormData(prev => {
+      const updated = {
+        ...prev,
+        headerMedia: media
+      };
+      
+      // If preview window exists, prioritize direct communication
+      if (previewWindowRef.current && !previewWindowRef.current.closed) {
+        try {
+          previewWindowRef.current.postMessage({
+            type: 'article-update-direct',
+            articleData: {
+              ...updated,
+              content: editor?.getHTML() || updated.content,
+              lastUpdated: new Date().toISOString()
+            },
+            timestamp: Date.now()
+          }, '*');
+        } catch (e) {
+          // If direct communication fails, fallback to storage method
+          safelyUpdateStorage({
+            ...updated,
+            content: editor?.getHTML() || updated.content,
+            lastUpdated: new Date().toISOString()
+          }, previewWindowRef);
+        }
+      } else {
+        // No preview window, update storage as fallback
+        safelyUpdateStorage({
+          ...updated,
+          content: editor?.getHTML() || updated.content,
+          lastUpdated: new Date().toISOString()
+        }, previewWindowRef);
+      }
+      
+      return updated;
+    });
+  };
+
+  /**
    * Handle header media upload
    */
   const handleHeaderMediaUpload = async (e: React.ChangeEvent<HTMLInputElement> | React.DragEvent) => {
@@ -668,15 +1047,12 @@ export const ArticleCreator: React.FC<ArticleCreatorProps> = ({ articleId }) => 
       const { url, type } = await uploadMediaFile(file);
       
       // Update form data with the header media
-      setFormData(prev => ({
-        ...prev,
-        headerMedia: {
-          url,
-          type: type as 'image' | 'video',
-          caption: '',
-          fileName: file.name
-        }
-      }));
+      updateHeaderMedia({
+        url,
+        type: type as 'image' | 'video',
+        caption: '',
+        fileName: file.name
+      });
 
       // Reset file input
       if (headerMediaInputRef.current) {
@@ -697,10 +1073,7 @@ export const ArticleCreator: React.FC<ArticleCreatorProps> = ({ articleId }) => 
    * Remove header media
    */
   const removeHeaderMedia = () => {
-    setFormData(prev => ({
-      ...prev,
-      headerMedia: null
-    }));
+    updateHeaderMedia(null);
   };
 
   /**
@@ -709,21 +1082,46 @@ export const ArticleCreator: React.FC<ArticleCreatorProps> = ({ articleId }) => 
   const setLink = () => {
     if (!editor) return;
     
-    const previousUrl = editor.getAttributes('link').href;
-    const url = window.prompt('URL', previousUrl);
+    const previousUrl = editor.getAttributes('link').href || '';
+    setCurrentLinkUrl(previousUrl);
+    setLinkDialogOpen(true);
+  };
+  
+  const handleSaveLink = (url: string) => {
+    if (!editor) return;
     
-    // cancelled
-    if (url === null) return;
-    
-    // empty
+    // If URL is empty, remove the link
     if (url === '') {
       editor.chain().focus().extendMarkRange('link').unsetLink().run();
-      return;
+    } else {
+      // Make one final check for valid URL to ensure it has protocol
+      try {
+        // Make sure URL has a protocol if it's a web URL
+        let finalUrl = url;
+        if (!/^(https?:\/\/|mailto:|tel:|ftp:|\/)/.test(finalUrl)) {
+          finalUrl = 'https://' + finalUrl;
+        }
+        
+        // Validate the URL
+        new URL(finalUrl);
+        
+        // Update link with validated URL
+        editor.chain().focus().extendMarkRange('link')
+          .setLink({ href: finalUrl, target: '_blank' }).run();
+      } catch (e) {
+        // If URL is not valid, don't update the link and log an error
+        console.error('Invalid URL:', url);
+        return;
+      }
     }
     
-    // update link
-    editor.chain().focus().extendMarkRange('link')
-      .setLink({ href: url, target: '_blank' }).run();
+    setLinkDialogOpen(false);
+  };
+  
+  const handleRemoveLink = () => {
+    if (!editor) return;
+    editor.chain().focus().extendMarkRange('link').unsetLink().run();
+    setLinkDialogOpen(false);
   };
 
   // Drag and drop handlers
@@ -746,10 +1144,237 @@ export const ArticleCreator: React.FC<ArticleCreatorProps> = ({ articleId }) => 
     handleHeaderMediaUpload(e);
   }, []);
 
+  // Add a useEffect to handle messages from preview window
+  useEffect(() => {
+    // Handle messages from preview window
+    const handleMessage = (event: MessageEvent) => {
+      // When preview window signals that it's ready, send the data
+      if (event.data && event.data.type === 'preview-window-ready' && previewWindowRef.current) {
+        try {
+          // Send the complete article data immediately
+          const completeData = {
+            ...formData,
+            content: editor?.getHTML() || formData.content,
+            lastUpdated: new Date().toISOString()
+          };
+          
+          previewWindowRef.current.postMessage({
+            type: 'article-update-direct',
+            articleData: completeData,
+            timestamp: new Date().getTime()
+          }, '*');
+        } catch (e) {
+          console.error('Error sending data to preview window:', e);
+        }
+      }
+      
+      // Handle request for full content
+      if (event.data && event.data.type === 'request-full-content' && previewWindowRef.current) {
+        try {
+          // Send the complete article data with all content
+          const completeData = {
+            ...formData,
+            content: editor?.getHTML() || formData.content,
+            lastUpdated: new Date().toISOString(),
+            isLoading: false // Clear loading state
+          };
+          
+          previewWindowRef.current.postMessage({
+            type: 'article-update-direct',
+            articleData: completeData,
+            timestamp: new Date().getTime()
+          }, '*');
+          
+          console.log('Sent full content to preview window in response to request');
+        } catch (e) {
+          console.error('Error sending full content to preview window:', e);
+        }
+      }
+    };
+    
+    // Add event listener
+    window.addEventListener('message', handleMessage);
+    
+    // Cleanup on unmount
+    return () => {
+      window.removeEventListener('message', handleMessage);
+    };
+  }, [formData, editor]);
+
+  // Open full article preview in a new tab
+  const openFullArticlePreview = () => {
+    try {
+      // Prepare the preview data
+      const previewData = {
+        ...formData,
+        content: editor?.getHTML() || formData.content,
+        lastUpdated: new Date().toISOString()
+      };
+      
+      // First, clear any existing data to avoid storage issues
+      sessionStorage.removeItem(PREVIEW_STORAGE_KEY);
+      
+      // Store minimal initial data in sessionStorage
+      const initialData = {
+        title: previewData.title || 'Untitled Article',
+        author: previewData.author,
+        category: previewData.category,
+        tags: previewData.tags,
+        publicationDate: previewData.publicationDate,
+        headerMedia: previewData.headerMedia,
+        lastUpdated: previewData.lastUpdated,
+        // Only store a loading indicator in storage
+        content: '<p>Loading content...</p>',
+        isLoading: true
+      };
+      
+      // Ensure the data is stored before opening the window
+      sessionStorage.setItem(PREVIEW_STORAGE_KEY, JSON.stringify(initialData));
+      
+      // Open a new tab with the preview
+      const previewWindow = window.open('/article-preview', '_blank');
+      
+      // Store the reference
+      if (previewWindow) {
+        previewWindowRef.current = previewWindow;
+        
+        // Send complete data via postMessage once the window is loaded
+        const messageInterval = setInterval(() => {
+          // Check if window is still open
+          if (previewWindowRef.current && !previewWindowRef.current.closed) {
+            try {
+              // Send the full content directly via postMessage
+              previewWindowRef.current.postMessage({
+                type: 'article-update-direct',
+                articleData: previewData,
+                timestamp: new Date().getTime()
+              }, '*');
+            } catch (e) {
+              console.log('Preview window communication error', e);
+              clearInterval(messageInterval);
+            }
+          } else {
+            // Window was closed, clear interval
+            clearInterval(messageInterval);
+          }
+        }, 500); // Send updates every 500ms to ensure connection
+        
+        // Clear interval after 10 seconds to avoid resource waste
+        setTimeout(() => {
+          clearInterval(messageInterval);
+        }, 10000);
+      }
+    } catch (error) {
+      console.error('Error opening preview:', error);
+      setError('Could not open preview. The article may be too large.');
+    }
+  };
+
+  // Toggle full article preview - keep for compatibility but redirect to new tab version
+  const toggleFullArticlePreview = () => {
+    openFullArticlePreview();
+  };
+
+  // Toggle preview mode within the editor
+  const togglePreviewMode = () => {
+    setPreviewMode(prev => !prev);
+  };
+
   if (loading && !editor) {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  // Render the full article preview
+  if (fullArticlePreview) {
+    return (
+      <div className="max-w-4xl mx-auto my-8 p-8 bg-white shadow-lg rounded-lg">
+        {/* Navigation Back from Preview */}
+        <div className="mb-6 flex justify-between items-center">
+          <button
+            onClick={toggleFullArticlePreview}
+            className="flex items-center text-gray-600 hover:text-gray-900"
+          >
+            <ArrowLeft size={16} className="mr-1" /> Back to Editor
+          </button>
+          <span className="px-3 py-1 text-sm bg-blue-100 text-blue-800 rounded-full">
+            Preview Mode
+          </span>
+        </div>
+
+        {/* Article Header */}
+        {formData.headerMedia && (
+          <div className="mb-6">
+            {formData.headerMedia.type === 'image' ? (
+              <img 
+                src={formData.headerMedia.url} 
+                alt={formData.title} 
+                className="w-full h-80 object-cover rounded-lg"
+              />
+            ) : (
+              <video 
+                src={formData.headerMedia.url} 
+                controls 
+                className="w-full h-80 object-cover rounded-lg"
+              />
+            )}
+          </div>
+        )}
+
+        {/* Article Title */}
+        <h1 className="text-4xl font-bold mb-4">{formData.title || "Untitled Article"}</h1>
+
+        {/* Article Metadata */}
+        <div className="flex flex-wrap items-center text-gray-600 mb-6 gap-4">
+          {formData.author && (
+            <div className="flex items-center">
+              <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center mr-2">
+                {formData.author.charAt(0).toUpperCase()}
+              </div>
+              <span>{formData.author}</span>
+            </div>
+          )}
+
+          {formData.publicationDate && (
+            <div className="flex items-center">
+              <Calendar size={16} className="mr-1" />
+              <span>{format(new Date(formData.publicationDate), 'MMMM d, yyyy')}</span>
+            </div>
+          )}
+
+          {formData.category && (
+            <div className="px-3 py-1 bg-gray-100 rounded-full text-sm">
+              {categories.find(c => c.value === formData.category)?.label || formData.category}
+            </div>
+          )}
+        </div>
+
+        {/* Tags */}
+        {formData.tags.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-6">
+            {formData.tags.map(tag => (
+              <span key={tag} className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm">
+                #{tag}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Article Content */}
+        <div 
+          className="prose max-w-none"
+          dangerouslySetInnerHTML={{ __html: editor?.getHTML() || formData.content }}
+        />
+        
+        {/* Article Footer */}
+        <div className="mt-12 pt-6 border-t border-gray-200">
+          <p className="text-gray-600 italic">
+            This article {formData.published ? 'was' : 'will be'} published on {format(new Date(formData.publicationDate || new Date()), 'MMMM d, yyyy')}
+          </p>
+        </div>
       </div>
     );
   }
@@ -767,6 +1392,15 @@ export const ArticleCreator: React.FC<ArticleCreatorProps> = ({ articleId }) => 
           <ArrowLeft size={16} className="mr-1" /> Back to Articles
         </button>
       </div>
+
+      {/* Link Dialog */}
+      <LinkDialog
+        isOpen={linkDialogOpen}
+        initialUrl={currentLinkUrl}
+        onClose={() => setLinkDialogOpen(false)}
+        onSave={handleSaveLink}
+        onRemove={currentLinkUrl ? handleRemoveLink : undefined}
+      />
 
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
@@ -1091,23 +1725,39 @@ export const ArticleCreator: React.FC<ArticleCreatorProps> = ({ articleId }) => 
       {/* Editor / Preview Area */}
       <div className="mb-6">
         <div className="flex justify-end mb-2">
-          <button
-            onClick={() => setPreviewMode(!previewMode)}
-            className="flex items-center text-gray-600 hover:text-gray-900"
-          >
-            {previewMode ? 'Edit' : <><Eye size={16} className="mr-1" /> Preview</>}
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={togglePreviewMode}
+              className={`flex items-center px-3 py-1 rounded ${previewMode 
+                ? 'bg-blue-600 text-white' 
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'} transition-colors`}
+              title="Toggle between edit and preview mode"
+            >
+              <Eye size={16} className="mr-1" /> {previewMode ? 'Edit Mode' : 'Preview Mode'}
+            </button>
+            <button
+              onClick={openFullArticlePreview}
+              className="flex items-center px-3 py-1 rounded bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors relative group"
+              title="Opens preview in a new tab with live updates"
+            >
+              <Monitor size={16} className="mr-1" /> Full Article Preview
+              <span className="absolute top-full right-0 mt-2 w-48 p-2 bg-gray-800 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
+                Opens in a new tab and updates as you edit
+              </span>
+            </button>
+          </div>
         </div>
         
         {previewMode ? (
           <div 
+            key={`preview-${lastEditorUpdate}`}
             className="border border-gray-300 rounded-lg p-6 min-h-[400px] prose max-w-none"
             dangerouslySetInnerHTML={{ __html: editor?.getHTML() || formData.content }}
           />
         ) : (
           <EditorContent 
             editor={editor} 
-            className="border border-gray-300 rounded-lg min-h-[400px] overflow-y-auto prose max-w-none"
+            className="border border-gray-300 rounded-lg min-h-[400px] overflow-y-auto prose max-w-none p-1.5"
           />
         )}
       </div>
